@@ -7,14 +7,14 @@ import pickle
 import os
 from PIL import Image
 
-
-class Classifier(pl.LightningModule):
+class Classifier(torch.nn.Module):
 
   def __init__(self, model_obj  ,
                 optimizer, 
                df_tr, df_val , lr_scheduler = None):
     
     super(Classifier, self).__init__()
+    print('Classifier object created')
     self.df_tr = df_tr
     self.df_val = df_val
     self.model_obj = model_obj
@@ -22,6 +22,7 @@ class Classifier(pl.LightningModule):
     self.criterion = torch.nn.CrossEntropyLoss()
     self.lr_scheduler = lr_scheduler
     self.valid_loss_min = np.Inf
+    self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
   def forward(self, x):
       return self.model_obj.forward(x)
@@ -120,7 +121,7 @@ class Classifier(pl.LightningModule):
       'val_acc': test_acc
     }
 
-    with open(os.path.join(self.model_obj.dir ,'history.pickle'), 'wb') as handle:
+    with open(os.path.join(self.model_obj.config['dir'] ,'history.pickle'), 'wb') as handle:
       pickle.dump(history, handle, protocol=pickle.HIGHEST_PROTOCOL)
       handle.close()
 
