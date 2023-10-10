@@ -7,38 +7,18 @@ from PIL import Image
 import torchmetrics
 
 class Classifier(pl.LightningModule):
-  def __init__(self, model_obj, train_df:pd.DataFrame, val_df:pd.DataFrame, tst_df:pd.DataFrame):
+  def __init__(self, model_obj):
     super().__init__()
     self.model = model_obj.model
     self.config = model_obj.config
-    self.transforms_ = model_obj.transforms_
-    self.train_df = train_df
-    self.val_df = val_df
-    self.tst_df = tst_df
 
-    self.accuracy = torchmetrics.Accuracy()
+    self.accuracy = torchmetrics.Accuracy(task = 'multiclass' , num_classes = self.config['num_classes'])
     self.criterion = torch.nn.CrossEntropyLoss()
 
-  def setup(self, stage: str):
-    if stage=='fit':
-      self.train_dataset = MyDataset(self.train_df, self.transforms_)
-      self.val_dataset = MyDataset(self.val_df, self.transforms_)
-    elif stage == 'test':
-      self.tst_dataset = MyDataset(self.tst_df, self.transforms_)
-
-  def train_dataloader(self):
-    return DataLoader(self.train_dataset, batch_size= self.config['BATCH_SIZE'], shuffle=True, num_workers=4)
-  
-  def val_dataloader(self):
-    return DataLoader(self.val_dataset, batch_size=self.config['BATCH_SIZE'], shuffle=True, num_workers=4 )
-  
-  def test_dataloader(self):
-    return DataLoader(self.tst_dataset, self.config['BATCH_SIZE'], shuffle=False, num_workers=4)
-  
   def training_step(self, batch, batch_idx):
     x, y = batch
     y_hat = self.model(x)
-    loss = self.criterion(y_hat, y)
+    loss = self.criterion(y_hat, y.long())
     self.accuracy(y_hat, y)
     self.log("train_acc", self.accuracy, on_epoch=True,prog_bar=True, logger=True)
     self.log("train_loss", loss, on_epoch=True, prog_bar=True, logger=True)
@@ -47,7 +27,7 @@ class Classifier(pl.LightningModule):
   def validation_step(self, batch, batch_idx):
     x, y = batch
     y_hat = self.model(x)
-    loss = self.criterion(y_hat, y)
+    loss = self.criterion(y_hat, y.long())
     self.accuracy(y_hat, y)
     self.log("val_acc", self.accuracy, on_epoch=True,prog_bar=True, logger=True)
     self.log("val_loss", loss, on_epoch=True, prog_bar=True, logger=True)
