@@ -11,6 +11,7 @@ class Classifier(pl.LightningModule):
     super().__init__()
     self.model = model_obj.model
     self.config = model_obj.config
+    self.layer_lr = model_obj.last_layer_lr
 
     self.accuracy = torchmetrics.Accuracy(task = 'multiclass' , num_classes = self.config['num_classes'])
     self.criterion = torch.nn.CrossEntropyLoss()
@@ -43,18 +44,18 @@ class Classifier(pl.LightningModule):
     return loss
   
   def configure_optimizers(self):
-    optim =  torch.optim.Adam(self.model.parameters(), lr=self.config['lr'])
-    lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optim, patience=5, threshold=0.001, cooldown =2,verbose=True)
+    optim =  torch.optim.Adam(self.model.parameters(), self.layer_lr,  lr=self.config['lr'])   # https://pytorch.org/docs/stable/optim.html
+    lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optim, patience=3, factor=0.5, threshold=0.001, cooldown =2,verbose=True)
     return [optim], [{'scheduler': lr_scheduler, 'interval': 'epoch', 'monitor': 'train_loss', 'name': 'lr_scheduler'}]
 
 #___________________________________________________________________________________________________________________
 class MyDataset(Dataset):
   # defining values in the constructor
-  def __init__(self , df,transforms):
+  def __init__(self , df,transforms_=None):
     self.df = df
     self.Y = torch.tensor( self.df.iloc[:, -1].values, dtype=torch.float32)
     self.shape = self.df.shape
-    self.transforms = transforms
+    self.transforms_ = transforms_
     
   # Getting the data samples
   def __getitem__(self, idx):
@@ -65,8 +66,8 @@ class MyDataset(Dataset):
       img_tensor = Image.open(img_path)
     else :
       img_tensor = np.load(img_path)
-
-    img_tensor = self.transforms(img_tensor)
+    if self.transforms_ is not None:
+      img_tensor = self.transforms(img_tensor)
     return img_tensor, y
   
   def __len__(self):

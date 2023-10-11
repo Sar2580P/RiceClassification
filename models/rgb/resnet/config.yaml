@@ -1,10 +1,9 @@
 dir : 'models/rgb/resnet'
-name :  'resnet'
-tr_path :  'Data/df_tr.csv'
-val_path : 'Data/df_val.csv'
-tst_path : 'Data/df_tst.csv'
 
 num_classes : 107
 
 BATCH_SIZE : 32
-lr : 0.0001
+lr : 0.00001
+
+ckpt_file_name : 'resnet--{epoch}-{val_loss:.2f}-{val_acc:.2f}'
+model_name : 'rgb_resnet_101'

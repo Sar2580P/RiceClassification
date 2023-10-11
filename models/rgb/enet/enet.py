@@ -1,18 +1,17 @@
 import  sys
 sys.path.append('models')
 from train_eval import *
-from model import Resnet
+from model import EffecientNet
 from callbacks import *
 from utils import *
 from pytorch_lightning import Trainer
 from pytorch_lightning.loggers import WandbLogger, CSVLogger
 from data_loading import *
 
-
-config_path = 'models/rgb/resnet/config.yaml'
+config_path = 'models/rgb/enet/config.yaml'
 config = load_config(config_path)
 
-model_obj = Resnet(config)
+model_obj = EffecientNet(config)
 
 #___________________________________________________________________________________________________________________
 num_workers = 0

@@ -4,56 +4,58 @@ import sys
 sys.path.append('enet')
 
 class Resnet():
+  # https://pytorch.org/vision/main/models/generated/torchvision.models.resnet101.html
   def __init__(self, config ):
-    print('in resnet constructor')
     self.config = config
-    self.model = torchvision.models.resnet101(pretrained = True, progress = True)
-    
+    self.resnet = torchvision.models.resnet101(weights = 'DEFAULT', progress = True)
+    self.base_model = nn.Sequential(*list(self.resnet.children())[:-1])
+
     self.__create_model__()
-    # print(summary(self.model, (3, 224, 224)))
+    self.layer_lr = [{'params' : self.base_model},{'params': self.head, 'lr': self.config['lr'] * 100}]
 
   def __create_model__(self):
-    for param in self.model.parameters():
-      param.requires_grad = True 
-
-    self.model.fc = nn.Sequential(
+    self.head = nn.Sequential(
                 Dense(0.2 , 2048 ,1024), 
                 Dense(0.15, 1024, 512) ,
                 Dense(0, 512, self.config['num_classes'])
+    )
+    self.model = nn.Sequential(
+                self.base_model ,
+                self.head
                         )
-    return self.model
     
   def forward(self, x):
     x =  self.model(x) 
     return x
 #___________________________________________________________________________________________________________________  
-'''
+
 class EffecientNet():
+  # https://pytorch.org/vision/stable/models/generated/torchvision.models.efficientnet_v2_l.html#torchvision.models.efficientnet_v2_l
   def __init__(self, config):
     self.config = config
-    from efficientnet_pytorch import EfficientNet
-    model_name = 'efficientnet-b7'
-    self.enet  = EfficientNet.from_pretrained(model_name, num_classes=107).to(device)
+    self.enet = torchvision.models.efficientnet_v2_l( weights='DEFAULT' , progress = True)    # 'DEFAULT'  : 'IMAGENET1K_V1'
+    self.base_model = nn.Sequential(*list(self.enet.children())[:-1])
 
-    print(summary(self.enet, (3, 224, 224)))
+    self.__create_model__()
+    self.layer_lr = [{'params' : self.base_model},{'params': self.head, 'lr': self.config['lr'] * 100}]
 
-    self.model = self.__create_model__()
-
-  def __create_model__(self):
-    for param in self.enet.parameters():
-      param.requires_grad = False 
-
-    self.enet.fc = nn.Sequential(
-                Dense(0.2 , 2048 ,1024), 
-                Dense(0.15, 1024, 512) ,
-                Dense(0, 512, self.config['num_classes']) 
-                        )
-    return self.enet
+  def __create_model__(self): 
+    self.head = nn.Sequential(
+                Dense(0.2 , 1028 ,512), 
+                Dense(0, 512, self.config['num_classes'])
+    )
+    self.model = nn.Sequential(
+                  self.base_model ,
+                  self.head
+                        )  
+    return 
     
   def forward(self, x):
-    x =  self.resnet(x) 
+    x =  self.model(x) 
     return x
-'''
+
+
+
 #___________________________________________________________________________________________________________________
 class Dense(nn.Module):
     def __init__(self, drop ,in_size, out_size):
@@ -67,10 +69,3 @@ class Dense(nn.Module):
         x = self.linear(x)
         x = self.prelu(x)
         return x
-# sys.path.append('Preprocessing')
-
-# from utils import *
-
-# config_path = 'models/rgb/enet/config.yaml'
-# config = load_config(config_path)
-# x = EffecientNet(config)
