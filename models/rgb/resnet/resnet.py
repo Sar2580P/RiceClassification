@@ -1,5 +1,7 @@
 import  sys
 sys.path.append('models')
+sys.path.append('Preprocessing')
+sys.path.append('models/rgb')
 from train_eval import *
 from model import Resnet
 from callbacks import *
@@ -29,5 +31,7 @@ checkpoint_callback.filename = config['ckpt_file_name']
 wandb_logger = WandbLogger(project=config['model_name'])
 csv_logger = CSVLogger(config['dir'], name=config['model_name']+'_logs')
 
-trainer = Trainer(callbacks=[early_stop_callback, checkpoint_callback, rich_progress_bar, rich_model_summary], max_epochs=1, logger=[wandb_logger, csv_logger])
+trainer = Trainer(callbacks=[early_stop_callback, checkpoint_callback, rich_progress_bar, rich_model_summary], 
+                  accelerator = 'gpu' ,max_epochs=1, logger=[wandb_logger,csv_logger])  
+ 
 trainer.fit(model, tr_loader, val_loader)

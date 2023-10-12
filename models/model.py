@@ -7,11 +7,11 @@ class Resnet():
   # https://pytorch.org/vision/main/models/generated/torchvision.models.resnet101.html
   def __init__(self, config ):
     self.config = config
-    self.resnet = torchvision.models.resnet101(weights = 'DEFAULT', progress = True)
+    self.resnet = torchvision.models.resnet101(weights = 'ResNet101_Weights.DEFAULT', progress = True)
     self.base_model = nn.Sequential(*list(self.resnet.children())[:-1])
 
     self.__create_model__()
-    self.layer_lr = [{'params' : self.base_model},{'params': self.head, 'lr': self.config['lr'] * 100}]
+    self.layer_lr = [{'params' : self.base_model.parameters()},{'params': self.head.parameters(), 'lr': self.config['lr'] * 100}]
 
   def __create_model__(self):
     self.head = nn.Sequential(
@@ -21,12 +21,12 @@ class Resnet():
     )
     self.model = nn.Sequential(
                 self.base_model ,
-                self.head
+                nn.Flatten(), 
+                self.head ,
                         )
     
   def forward(self, x):
-    x =  self.model(x) 
-    return x
+    return self.model(x)
 #___________________________________________________________________________________________________________________  
 
 class EffecientNet():
