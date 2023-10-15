@@ -1,5 +1,4 @@
 import torch
-import pandas as pd
 import pytorch_lightning as pl
 from torch.utils.data import Dataset, DataLoader
 import numpy as np
@@ -13,6 +12,8 @@ class Classifier(pl.LightningModule):
     self.config = model_obj.config
     self.layer_lr = model_obj.layer_lr
 
+    self.epoch_loss = []
+    self.kappa = torchmetrics.CohenKappa(task = 'multiclass' , num_classes = self.config['num_classes'], weights = 'quadratic')
     self.accuracy = torchmetrics.Accuracy(task = 'multiclass' , num_classes = self.config['num_classes'])
     self.criterion = torch.nn.CrossEntropyLoss()
 
@@ -20,28 +21,50 @@ class Classifier(pl.LightningModule):
     x, y = batch
     y_hat = self.model(x)
     loss = self.criterion(y_hat, y.long())
+    self.epoch_loss.append(loss.item())
     self.accuracy(y_hat, y)
-    self.log("train_acc", self.accuracy, on_epoch=True,prog_bar=True, logger=True)
-    self.log("train_loss", loss, on_epoch=True, prog_bar=True, logger=True)
+    self.kappa(y_hat, y)
     return loss
   
   def validation_step(self, batch, batch_idx):
     x, y = batch
     y_hat = self.model(x)
     loss = self.criterion(y_hat, y.long())
+    self.epoch_loss.append(loss.item())
     self.accuracy(y_hat, y)
-    self.log("val_acc", self.accuracy, on_epoch=True,prog_bar=True, logger=True)
-    self.log("val_loss", loss, on_epoch=True, prog_bar=True, logger=True)
+    self.kappa(y_hat, y)
     return loss
   
   def test_step(self, batch, batch_idx):
     x, y = batch
     y_hat = self.model(x)
     loss = self.criterion(y_hat, y)
+    self.epoch_loss.append(loss.item())
     self.accuracy(y_hat, y)
-    self.log("test_acc", self.accuracy, on_epoch=True,prog_bar=True, logger=True)
-    self.log("test_loss", loss, on_epoch=True, prog_bar=True, logger=True)
+    self.kappa(y_hat, y)
     return loss
+  
+  def on_train_epoch_end(self):
+    mean_loss = round( sum(self.epoch_loss) / len(self.epoch_loss) , 5) 
+    self.log("train_loss", mean_loss, on_epoch=True, prog_bar=True, logger=True)
+    self.log("train_kappa", self.kappa, on_epoch=True, prog_bar=True, logger=True)
+    self.log("train_accuracy", self.accuracy, on_epoch=True,prog_bar=True, logger=True)
+    self.epoch_loss.clear()
+
+  def on_validation_epoch_end(self):
+    mean_loss = round( sum(self.epoch_loss) / len(self.epoch_loss) , 5)
+    self.log("val_loss", mean_loss, on_epoch=True, prog_bar=True, logger=True)
+    self.log("val_kappa", self.kappa, on_epoch=True, prog_bar=True, logger=True)
+    self.log("val_accuracy", self.accuracy, on_epoch=True,prog_bar=True, logger=True)
+    self.epoch_loss.clear()
+
+  def on_test_epoch_end(self):
+    mean_loss = round( sum(self.epoch_loss) / len(self.epoch_loss) , 5)
+    self.log("test_loss", mean_loss, on_epoch=True, prog_bar=True, logger=True)
+    self.log("test_kappa", self.kappa, on_epoch=True, prog_bar=True, logger=True)
+    self.log("test_accuracy", self.accuracy, on_epoch=True,prog_bar=True, logger=True)
+    self.epoch_loss.clear()
+
   
   def configure_optimizers(self):
     optim =  torch.optim.Adam(self.layer_lr, lr = self.config['lr'])   # https://pytorch.org/docs/stable/optim.html
