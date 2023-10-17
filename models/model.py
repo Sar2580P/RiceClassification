@@ -1,7 +1,5 @@
 import torchvision
 import torch.nn as nn 
-import sys
-sys.path.append('enet')
 from modules import *
 import torch
 
@@ -39,7 +37,7 @@ class EffecientNet():
     self.base_model = nn.Sequential(*list(self.enet.children())[:-1])
 
     self.__create_model__()
-    self.layer_lr = [{'params' : self.base_model},{'params': self.head, 'lr': self.config['lr'] * 100}]
+    self.layer_lr = [{'params' : self.base_model.parameters()},{'params': self.head.parameters(), 'lr': self.config['lr'] * 100}]
 
   def __create_model__(self): 
     self.head = nn.Sequential(
@@ -70,7 +68,7 @@ class HSIModel(nn.Module):
                               Dense(0, 256, self.config['num_classes'])
                 )
     self.base_model = self.get_model()
-    self.layer_lr = [{'params' : self.base_model.parameters()},{'params': self.head, 'lr': self.config['lr'] * 1}]
+    self.layer_lr = [{'params' : self.base_model.parameters()},{'params': self.head.parameters(), 'lr': self.config['lr'] * 1}]
 
 
   def get_model(self):
@@ -91,7 +89,7 @@ class HSIModel(nn.Module):
     x = self.fc1(x)
     x = self.fc2(x)
     return x
-  
+#___________________________________________________________________________________________________________________
 
 # model = HSIModel(168, 107)
 
