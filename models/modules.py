@@ -114,7 +114,7 @@ class XceptionBlock(nn.Module):
     self.sep_conv1 = SeparableConvBlock(in_channel = in_channels , out_channels = out_channels)
     self.sep_conv2 = SeparableConvBlock(in_channel = out_channels , out_channels = out_channels)
     self.prelu = nn.PReLU()
-    self.max_pool = nn.MaxPool2d(kernel_size = (3,3) , stride = (2,2) , padding = 'same')
+    self.max_pool = nn.MaxPool2d(kernel_size = (2,2) , stride = (2,2) , padding = 'same')
     self.conv1_1 = nn.Conv2d(in_channels = in_channels , out_channels = out_channels , kernel_size = (1,1) , stride = (2,2))
 
     self.xception_model = self.get_model()

@@ -2,6 +2,8 @@ import torchvision
 import torch.nn as nn 
 import sys
 sys.path.append('enet')
+from modules import *
+import torch
 
 class Resnet():
   # https://pytorch.org/vision/main/models/generated/torchvision.models.resnet101.html
@@ -57,15 +59,42 @@ class EffecientNet():
 
 
 #___________________________________________________________________________________________________________________
-class Dense(nn.Module):
-    def __init__(self, drop ,in_size, out_size):
-        super(Dense ,self).__init__()
-        self.dropout = nn.Dropout(drop)
-        self.linear = nn.Linear(in_size, out_size)
-        self.prelu = nn.PReLU()
+ 
 
-    def forward(self, x):
-        x = self.dropout(x)
-        x = self.linear(x)
-        x = self.prelu(x)
-        return x
+class HSIModel(nn.Module):
+  def __init__(self , config):
+    super(HSIModel, self).__init__()
+    self.config = config
+    self.in_channels = self.config['in_channels']
+    self.head = nn.Sequential(Dense(0.2 , 1024, 256), 
+                              Dense(0, 256, self.config['num_classes'])
+                )
+    self.base_model = self.get_model()
+    self.layer_lr = [{'params' : self.base_model.parameters()},{'params': self.head, 'lr': self.config['lr'] * 1}]
+
+
+  def get_model(self):
+    return nn.Sequential(
+        BandAttentionBlock(self.in_channels), 
+        SqueezeBlock(self.in_channels, self.squeeze_channels),
+        XceptionBlock(self.squeeze_channels, 128), 
+        XceptionBlock(128, 256) , 
+        ResidualBlock(256, 256) ,
+        XceptionBlock(256, 512), 
+        SeparableConvBlock(512, 1024), 
+        nn.MaxPool2d(kernel_size = (3,3) , stride = (2,2)) , 
+        nn.AdaptiveAvgPool2d((1,1)) ,
+    )
+  def forward(self, x):
+    x = self.base_model(x)
+    x = torch.flatten(x, 1)
+    x = self.fc1(x)
+    x = self.fc2(x)
+    return x
+  
+
+# model = HSIModel(168, 107)
+
+# x = torch.randn(32,168, 256, 256)
+# y = model(x)
+    
