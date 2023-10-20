@@ -96,11 +96,36 @@ class MyDataset(Dataset):
       img_tensor = Image.open(img_path)
     else :
       img_tensor = np.load(img_path)
+      img_tensor = self.__msc_correction__(img_tensor)
+      # img_tensor = self.__snv__(img_tensor)
     
     img_tensor = self.transforms_(img_tensor)
     return img_tensor, y
   
+  def __msc_correction__(self, hsi_image):
+
+    # Compute the 
+    mean_spectrum = np.mean(hsi_image, axis=(0, 1))     # mean spectrum of the image , shape = (num_bands,)
+
+    # Compute the MSC correction factor for each band.
+    msc_correction_factor = mean_spectrum / np.mean(mean_spectrum)
+
+    # Apply the MSC correction to the image.
+    corrected_image = hsi_image * msc_correction_factor
+
+    return corrected_image
+  
+  def __snv__(self, data):
+    # Compute the mean and standard deviation of each row of the data.
+    row_means = np.mean(data, axis=1,  keepdims=True)
+    row_stds = np.std(data, axis=1,  keepdims=True)
+
+    # Center and scale each row of the data.
+    snv_data = (data - row_means) / row_stds
+
+    return snv_data
+  
   def __len__(self):
     return self.shape[0]
   
-            
+          
