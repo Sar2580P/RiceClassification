@@ -18,3 +18,8 @@ models/rgb/__pycache__
 Preprocessing/__pycache__
 models/__pycache__
 models/hsi/__pycache__
+models/hsi/xception/ckpts
+models/hsi/xception/hsi_xception_logs
+models/hsi/xception/confusion_matrix.xlsx
+models/rgb/resnet/confusion_matrix.xlsx
+models/rgb/enet/confusion_matrix.xlsx

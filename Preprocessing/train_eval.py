@@ -4,6 +4,9 @@ from torch.utils.data import Dataset, DataLoader
 import numpy as np
 from PIL import Image
 import torchmetrics
+from torchmetrics.classification import MulticlassConfusionMatrix
+import os
+import pandas as pd
 
 class Classifier(pl.LightningModule):
   def __init__(self, model_obj):
@@ -12,60 +15,64 @@ class Classifier(pl.LightningModule):
     self.config = model_obj.config
     self.layer_lr = model_obj.layer_lr
 
-    self.epoch_loss = []
-    self.kappa = torchmetrics.CohenKappa(task = 'multiclass' , num_classes = self.config['num_classes'], weights = 'quadratic')
-    self.accuracy = torchmetrics.Accuracy(task = 'multiclass' , num_classes = self.config['num_classes'])
+    self.tr_kappa = torchmetrics.CohenKappa(task = 'multiclass' , num_classes = self.config['num_classes'], weights = 'quadratic')
+    self.val_kappa = torchmetrics.CohenKappa(task = 'multiclass' , num_classes = self.config['num_classes'], weights = 'quadratic')
+    self.tst_kappa = torchmetrics.CohenKappa(task = 'multiclass' , num_classes = self.config['num_classes'], weights = 'quadratic')
+
+    self.tr_accuracy = torchmetrics.Accuracy(task = 'multiclass' , num_classes = self.config['num_classes'])
+    self.val_accuracy = torchmetrics.Accuracy(task = 'multiclass' , num_classes = self.config['num_classes'])
+    self.tst_accuracy = torchmetrics.Accuracy(task = 'multiclass' , num_classes = self.config['num_classes'])
+
+    self.conf_mat = MulticlassConfusionMatrix(num_classes = self.config['num_classes'])
     self.criterion = torch.nn.CrossEntropyLoss()
+    
+    self.y_hat = []
+    self.y_true = []
 
   def training_step(self, batch, batch_idx):
     x, y = batch
     y_hat = self.model(x)
     loss = self.criterion(y_hat, y.long())
-    self.epoch_loss.append(loss.item())
-    self.accuracy(y_hat, y)
-    self.kappa(y_hat, y)
+    self.log("train_loss", loss,on_step = False ,on_epoch=True, prog_bar=True, logger=True)
+    self.tr_accuracy(y_hat, y)
+    self.tr_kappa(y_hat, y)
+    self.log("train_kappa", self.tr_kappa, on_step=False , on_epoch=True, prog_bar=True, logger=True)
+    self.log("train_accuracy", self.tr_accuracy, on_step = False, on_epoch=True,prog_bar=True, logger=True)
     return loss
   
   def validation_step(self, batch, batch_idx):
     x, y = batch
     y_hat = self.model(x)
     loss = self.criterion(y_hat, y.long())
-    self.epoch_loss.append(loss.item())
-    self.accuracy(y_hat, y)
-    self.kappa(y_hat, y)
+    self.log("val_loss", loss, on_epoch=True, prog_bar=True, logger=True)
+    self.val_accuracy(y_hat, y)
+    self.val_kappa(y_hat, y)
+    self.log("val_kappa", self.val_kappa,on_step = False, on_epoch=True, prog_bar=True, logger=True)
+    self.log("val_accuracy", self.val_accuracy, on_step = False, on_epoch=True,prog_bar=True, logger=True)
     return loss
   
   def test_step(self, batch, batch_idx):
     x, y = batch
     y_hat = self.model(x)
-    loss = self.criterion(y_hat, y)
-    self.epoch_loss.append(loss.item())
-    self.accuracy(y_hat, y)
-    self.kappa(y_hat, y)
+    self.y_hat.append(y_hat)
+    self.y_true.append(y)
+    loss = self.criterion(y_hat, y.long())
+    self.log("test_loss", loss, on_epoch=True, prog_bar=True, logger=True)
+    self.tst_accuracy(y_hat, y)
+    self.tst_kappa(y_hat, y)
+    self.log("test_kappa", self.tst_kappa,on_step = False,  on_epoch=True, prog_bar=True, logger=True)
+    self.log("test_accuracy", self.tst_accuracy, on_step = False ,on_epoch=True,prog_bar=True, logger=True)
     return loss
   
-  def on_train_epoch_end(self):
-    mean_loss = round( sum(self.epoch_loss) / len(self.epoch_loss) , 5) 
-    self.log("train_loss", mean_loss, on_epoch=True, prog_bar=True, logger=True)
-    self.log("train_kappa", self.kappa, on_epoch=True, prog_bar=True, logger=True)
-    self.log("train_accuracy", self.accuracy, on_epoch=True,prog_bar=True, logger=True)
-    self.epoch_loss.clear()
-
-  def on_validation_epoch_end(self):
-    mean_loss = round( sum(self.epoch_loss) / len(self.epoch_loss) , 5)
-    self.log("val_loss", mean_loss, on_epoch=True, prog_bar=True, logger=True)
-    self.log("val_kappa", self.kappa, on_epoch=True, prog_bar=True, logger=True)
-    self.log("val_accuracy", self.accuracy, on_epoch=True,prog_bar=True, logger=True)
-    self.epoch_loss.clear()
-
   def on_test_epoch_end(self):
-    mean_loss = round( sum(self.epoch_loss) / len(self.epoch_loss) , 5)
-    self.log("test_loss", mean_loss, on_epoch=True, prog_bar=True, logger=True)
-    self.log("test_kappa", self.kappa, on_epoch=True, prog_bar=True, logger=True)
-    self.log("test_accuracy", self.accuracy, on_epoch=True,prog_bar=True, logger=True)
-    self.epoch_loss.clear()
-
-  
+    y_hat = torch.cat(self.y_hat, dim=0)
+    y_true = torch.cat(self.y_true, dim=0)
+    
+    cm = self.conf_mat(y_hat, y_true).detach().cpu().numpy()
+    
+    df = pd.DataFrame(cm , columns = [str(i) for i in range(self.config['num_classes'])])
+    df.to_excel(os.path.join(self.config['dir'], 'confusion_matrix.xlsx'))
+    
   def configure_optimizers(self):
     optim =  torch.optim.Adam(self.layer_lr, lr = self.config['lr'])   # https://pytorch.org/docs/stable/optim.html
     lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optim, patience=3, factor=0.5, threshold=0.001, cooldown =2,verbose=True)

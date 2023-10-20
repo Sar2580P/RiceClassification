@@ -64,17 +64,21 @@ def segment_images():
 #__________________________________________________________________________________________________________________
 
 class Preprocess():
-  def __init__(self ,base_path_rgb , base_path_hsi , df_rgb , df_hsi):
+  def __init__(self ,base_path_rgb , base_path_hsi , df_rgb , df_hsi, class_ct = 107):
     self.base_path_rgb = base_path_rgb
     self.base_path_hsi = base_path_hsi
     self.df_rgb = df_rgb
     self.df_hsi = df_hsi
+    self.class_ct = class_ct
+    self.dir = 'Data/{ct}'.format(ct = self.class_ct)
+    if not os.path.exists(self.dir):
+      os.mkdir(self.dir)
 
-  def concat_df(self, class_ct = 107):
+  def concat_df(self):
     self.df_final = pd.DataFrame(columns=['rgb_path', 'hsi_path' , 'class_id'])
     for i in range(len(self.df_rgb)):
-      if self.df_rgb.iloc[i,1]>= class_ct:
-         print('taken only {} classes'.format(class_ct))
+      if self.df_rgb.iloc[i,1]>= self.class_ct:
+         print('taken only {} classes'.format(self.class_ct))
          break
       if self.df_rgb.iloc[i,0][:-4] != self.df_hsi.iloc[i,0][:-4]:
         print('error in concat_df')
@@ -85,16 +89,19 @@ class Preprocess():
       class_id = self.df_rgb.iloc[i,1]
       self.df_final.loc[len(self.df_final)] = [rgb_path , hsi_path , class_id]
 
-    self.df_final.to_csv('Data/df_final.csv' , index = False)
+    self.df_final.to_csv(os.path.join(self.dir ,'df_final.csv') , index = False)
 
-  def split_df(self, df,  test_size = 0.2, val_size = 0.1):
+  def split_df(self, df,  test_size = 0.2, val_size = 0.15):
     df_train , df_test = train_test_split(df, test_size=test_size, stratify=df.iloc[:,2])
     df_train ,df_val = train_test_split(df_train, test_size=val_size, stratify=df_train.iloc[:,2])
 
-    df_train.to_csv('Data/df_tr.csv' , index = False)
-    df_val.to_csv('Data/df_val.csv' , index = False)
-    df_test.to_csv('Data/df_tst.csv' , index = False)
+    df_train.to_csv(os.path.join(self.dir, 'df_tr.csv') , index = False)
+    df_val.to_csv(os.path.join(self.dir ,'df_val.csv') , index = False)
+    df_test.to_csv(os.path.join(self.dir, 'df_tst.csv') , index = False)
 
-# p = Preprocess('Data/rgb', 'Data/hsi', pd.read_csv('Data/rgb.csv'), pd.read_csv('Data/hsi.csv'))
+
+#__________________________________________________________________________________________________________________
+# class_ct = 50
+# p = Preprocess('Data/rgb', 'Data/hsi', pd.read_csv('Data/rgb.csv'), pd.read_csv('Data/hsi.csv'), class_ct)
 # p.concat_df() 
-# p.split_df(pd.read_csv('Data/df_final.csv'))
+# p.split_df(pd.read_csv('Data/{x}/df_final.csv'.format(x = class_ct)))

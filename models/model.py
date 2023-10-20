@@ -1,3 +1,4 @@
+from sympy import E
 import torchvision
 import torch.nn as nn 
 from modules import *
@@ -41,7 +42,8 @@ class EffecientNet():
 
   def __create_model__(self): 
     self.head = nn.Sequential(
-                Dense(0.2 , 1028 ,512), 
+                nn.Flatten(1) ,
+                Dense(0.2 , 1280 ,512), 
                 Dense(0, 512, self.config['num_classes'])
     )
     self.model = nn.Sequential(
@@ -51,8 +53,7 @@ class EffecientNet():
     return 
     
   def forward(self, x):
-    x =  self.model(x) 
-    return x
+    return self.model(x)
 
 
 
@@ -64,16 +65,22 @@ class HSIModel(nn.Module):
     super(HSIModel, self).__init__()
     self.config = config
     self.in_channels = self.config['in_channels']
-    self.head = nn.Sequential(Dense(0.2 , 1024, 256), 
+    self.head = nn.Sequential(nn.Flatten(1) ,
+                              Dense(0.2 , 1024, 256), 
                               Dense(0, 256, self.config['num_classes'])
                 )
-    self.base_model = self.get_model()
+    self.squeeze_channels = 100
+    self.base_model = self.get_base_model()
+    self.model = nn.Sequential(
+                self.base_model ,
+                self.head
+                        )
     self.layer_lr = [{'params' : self.base_model.parameters()},{'params': self.head.parameters(), 'lr': self.config['lr'] * 1}]
 
 
-  def get_model(self):
+  def get_base_model(self):
     return nn.Sequential(
-        BandAttentionBlock(self.in_channels), 
+        # BandAttentionBlock(self.in_channels), 
         SqueezeBlock(self.in_channels, self.squeeze_channels),
         XceptionBlock(self.squeeze_channels, 128), 
         XceptionBlock(128, 256) , 
@@ -84,15 +91,19 @@ class HSIModel(nn.Module):
         nn.AdaptiveAvgPool2d((1,1)) ,
     )
   def forward(self, x):
-    x = self.base_model(x)
-    x = torch.flatten(x, 1)
-    x = self.fc1(x)
-    x = self.fc2(x)
-    return x
+    return self.model(x)
 #___________________________________________________________________________________________________________________
 
 # model = HSIModel(168, 107)
 
-# x = torch.randn(32,168, 256, 256)
-# y = model(x)
+
     
+# model = EffecientNet({'lr': 0.001, 'num_classes': 107})
+# print(model.base_model)
+# x = torch.randn(32,3, 126, 240)
+# y = model.forward(x)
+
+# m = nn.AdaptiveAvgPool2d(1)
+# input = torch.randn(32, 64, 8, 9)
+# output = m(input)
+# print(output.shape)
