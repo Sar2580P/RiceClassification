@@ -12,6 +12,7 @@ from data_loading import *
 
 config_path = 'models/rgb/enet/config.yaml'
 config = load_config(config_path)
+torch.set_float32_matmul_precision('high')
 
 model_obj = EffecientNet(config)
 

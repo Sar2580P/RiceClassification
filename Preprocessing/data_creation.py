@@ -1,3 +1,4 @@
+import enum
 import os, sys
 import pandas as pd
 import json
@@ -7,6 +8,7 @@ from utils import *
 from sklearn.model_selection import train_test_split
 import random
 random.seed(42)
+from sklearn.model_selection import StratifiedKFold
 
 def segment_images():
   class_to_id = {}
@@ -91,17 +93,23 @@ class Preprocess():
 
     self.df_final.to_csv(os.path.join(self.dir ,'df_final.csv') , index = False)
 
-  def split_df(self, df,  test_size = 0.2, val_size = 0.15):
+  def split_df(self, df,  test_size = 0.2):
     df_train , df_test = train_test_split(df, test_size=test_size, stratify=df.iloc[:,2])
-    df_train ,df_val = train_test_split(df_train, test_size=val_size, stratify=df_train.iloc[:,2])
-
-    df_train.to_csv(os.path.join(self.dir, 'df_tr.csv') , index = False)
-    df_val.to_csv(os.path.join(self.dir ,'df_val.csv') , index = False)
     df_test.to_csv(os.path.join(self.dir, 'df_tst.csv') , index = False)
 
+    skf = StratifiedKFold(n_splits=5, random_state=42, shuffle=True)
 
+    y = df_train.iloc[:,2].to_numpy()
+    for fold, (train_index, val_index) in enumerate(skf.split(df_train, y)):
+      if not os.path.exists(os.path.join(self.dir,'fold_{x}'.format(x = fold))):
+        os.mkdir(os.path.join(self.dir,'fold_{x}'.format(x = fold)))
+
+      df_train_fold, df_val_fold = df_train.iloc[train_index, :], df_train.iloc[val_index, :]
+      
+      df_train_fold.to_csv(os.path.join(self.dir,'fold_{x}'.format(x = fold) , 'df_tr.csv') , index = False)
+      df_val_fold.to_csv(os.path.join(self.dir,'fold_{x}'.format(x = fold),  'df_val.csv') , index = False)
 #__________________________________________________________________________________________________________________
-# class_ct = 50
+# class_ct = 107
 # p = Preprocess('Data/rgb', 'Data/hsi', pd.read_csv('Data/rgb.csv'), pd.read_csv('Data/hsi.csv'), class_ct)
 # p.concat_df() 
 # p.split_df(pd.read_csv('Data/{x}/df_final.csv'.format(x = class_ct)))
