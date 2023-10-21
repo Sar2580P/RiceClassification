@@ -3,7 +3,7 @@ dir : 'models/rgb/resnet'
 num_classes : 107
 
 BATCH_SIZE : 32
-lr : 0.00001
+lr : 0.000001
 
 ckpt_file_name : 'resnet--{epoch}-{val_loss:.2f}-{val_accuracy:.2f}'
 model_name : 'rgb_resnet_101'

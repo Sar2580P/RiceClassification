@@ -132,7 +132,7 @@ class XceptionBlock(nn.Module):
 #___________________________________________________________________________________________________________________
 
 class ResidualBlock(nn.Module):
-  def __init__(self, in_channels , n = 3):
+  def __init__(self, in_channels , n = 5):
     super(ResidualBlock, self).__init__()
     # n : no. of seperable conv blocks in a residual block
     self.sep_conv_blocks = [SeparableConvBlock(in_channel = in_channels , out_channels = in_channels) for i in range(n)]

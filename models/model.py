@@ -58,7 +58,33 @@ class EffecientNet():
 
 
 #___________________________________________________________________________________________________________________
- 
+
+class GoogleNet():
+  # https://pytorch.org/vision/stable/models/generated/torchvision.models.efficientnet_v2_l.html#torchvision.models.efficientnet_v2_l
+  def __init__(self, config):
+    self.config = config
+    self.gnet = torchvision.models.googlenet( weights='DEFAULT' , progress = True)    # 'DEFAULT'  : 'IMAGENET1K_V1'
+    self.base_model = nn.Sequential(*list(self.gnet.children())[:-2])
+
+    self.__create_model__()
+    self.layer_lr = [{'params' : self.base_model.parameters()},{'params': self.head.parameters(), 'lr': self.config['lr'] * 100}]
+
+  def __create_model__(self): 
+    self.head = nn.Sequential(
+                nn.Flatten(1) ,
+                Dense(0.2 , 1024 ,512), 
+                Dense(0, 512, self.config['num_classes'])
+    )
+    self.model = nn.Sequential(
+                  self.base_model ,
+                  self.head
+                        )  
+    return 
+    
+  def forward(self, x):
+    return self.model(x)  
+  
+#___________________________________________________________________________________________________________________
 
 class HSIModel(nn.Module):
   def __init__(self , config):
@@ -66,8 +92,8 @@ class HSIModel(nn.Module):
     self.config = config
     self.in_channels = self.config['in_channels']
     self.head = nn.Sequential(nn.Flatten(1) ,
-                              Dense(0.2 , 1024, 256), 
-                              Dense(0, 256, self.config['num_classes'])
+                              Dense(0.25 , 1024, 512), 
+                              Dense(0, 512, self.config['num_classes'])
                 )
     self.squeeze_channels = 100
     self.base_model = self.get_base_model()
@@ -80,7 +106,7 @@ class HSIModel(nn.Module):
 
   def get_base_model(self):
     return nn.Sequential(
-        # BandAttentionBlock(self.in_channels), 
+        BandAttentionBlock(self.in_channels), 
         SqueezeBlock(self.in_channels, self.squeeze_channels),
         XceptionBlock(self.squeeze_channels, 128), 
         XceptionBlock(128, 256) , 
@@ -94,16 +120,22 @@ class HSIModel(nn.Module):
     return self.model(x)
 #___________________________________________________________________________________________________________________
 
-# model = HSIModel(168, 107)
+# model = HSIModel({'lr': 0.001, 'num_classes': 107, 'in_channels': 168})
 
 
     
 # model = EffecientNet({'lr': 0.001, 'num_classes': 107})
 # print(model.base_model)
-# x = torch.randn(32,3, 126, 240)
+# x = torch.randn(32,168, 126, 240)
 # y = model.forward(x)
 
 # m = nn.AdaptiveAvgPool2d(1)
 # input = torch.randn(32, 64, 8, 9)
 # output = m(input)
 # print(output.shape)
+
+# model = GoogleNet({'lr': 0.001, 'num_classes': 107})
+# print(model.base_model)
+# x = torch.randn(32,3, 126, 240)
+# y = model.forward(x)
+# print(y.shape)

@@ -20,6 +20,9 @@ models/__pycache__
 models/hsi/__pycache__
 models/hsi/xception/ckpts
 models/hsi/xception/hsi_xception_logs
-models/hsi/xception/confusion_matrix.xlsx
-models/rgb/resnet/confusion_matrix.xlsx
-models/rgb/enet/confusion_matrix.xlsx
+models/hsi/xception/confusion_matrix.csv
+models/rgb/resnet/confusion_matrix.csv
+models/rgb/enet/confusion_matrix.csv
+models/rgb/google_net/ckpts
+models/rgb/google_net/confusion_matrix.csv
+models/rgb/google_net/rgb_google_net_logs
