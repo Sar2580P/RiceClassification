@@ -71,7 +71,7 @@ class Classifier(pl.LightningModule):
     cm = self.conf_mat(y_hat, y_true).detach().cpu().numpy()
     
     df = pd.DataFrame(cm , columns = [str(i) for i in range(self.config['num_classes'])])
-    df.to_excel(os.path.join(self.config['dir'], 'confusion_matrix.csv'))
+    df.to_csv(os.path.join(self.config['dir'], 'confusion_matrix.csv'))
     
   def configure_optimizers(self):
     optim =  torch.optim.Adam(self.layer_lr, lr = self.config['lr'], weight_decay = self.config['weight_decay'])   # https://pytorch.org/docs/stable/optim.html

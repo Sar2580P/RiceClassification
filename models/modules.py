@@ -79,20 +79,21 @@ class BandAttentionBlock(nn.Module):
 class SeparableConvBlock(nn.Module):
   def __init__(self, in_channel, out_channels, kernel_size = (3,3)):
     super(SeparableConvBlock, self).__init__()
-    self.conv1 = nn.Conv2d(in_channels = in_channel , out_channels = out_channels , kernel_size = (1,1))
-    self.conv2 = nn.Conv2d(in_channels = out_channels , out_channels = out_channels , kernel_size = kernel_size , padding = 'same' , groups = out_channels)
-    self.prelu = nn.PReLU()
-    self.batch = nn.BatchNorm2d(in_channel)
+    self.in_channels , self.out_channels = in_channel , out_channels
+    self.kernel_size = kernel_size
     self.seperable_conv = self.get_model()
 
   def get_model(self):
     return nn.Sequential(
-        self.batch ,
-        self.prelu ,
-        self.conv1 ,
-        self.conv2 ,
+        nn.Conv2d(in_channels = self.in_channels , out_channels = self.out_channels , kernel_size = (1,1)), 
+        nn.Conv2d(in_channels = self.out_channels , out_channels = self.out_channels , kernel_size = self.kernel_size , 
+                  padding = 'same' , groups = self.out_channels), 
+        nn.PReLU(), 
+        nn.BatchNorm2d(self.out_channels)
+        
     )
   def forward(self, x):
+    # print('inside forward of seperable conv block ')
     return self.seperable_conv(x)
 #___________________________________________________________________________________________________________________
 
@@ -132,7 +133,7 @@ class XceptionBlock(nn.Module):
 #___________________________________________________________________________________________________________________
 
 class ResidualBlock(nn.Module):
-  def __init__(self, in_channels , n = 5):
+  def __init__(self, in_channels , n = 10):
     super(ResidualBlock, self).__init__()
     # n : no. of seperable conv blocks in a residual block
     self.sep_conv_blocks = [SeparableConvBlock(in_channel = in_channels , out_channels = in_channels) for i in range(n)]
@@ -142,3 +143,8 @@ class ResidualBlock(nn.Module):
   def forward(self, x):
     return x + self.model(x)    # side branch + main branch
 #___________________________________________________________________________________________________________________
+model = ResidualBlock(256)
+import torch
+print(model.model)
+(model.forward(torch.randn(1,256,124,140)))
+

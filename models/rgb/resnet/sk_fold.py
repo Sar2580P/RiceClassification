@@ -21,7 +21,7 @@ num_workers = 8
 model = Classifier(model_obj)
 
 trainer = Trainer(callbacks=[early_stop_callback, checkpoint_callback, rich_progress_bar, rich_model_summary], 
-                  max_epochs=25)  
+                  max_epochs=50)  
 path = 'Data/107'
 test_results = []
 
@@ -29,13 +29,17 @@ for i in range(5):
   tr_path = os.path.join(path, 'fold_{x}'.format(x=i) ,'df_tr.csv')
   val_path = os.path.join(path,'fold_{x}'.format(x=i) ,'df_val.csv')
   tst_path = os.path.join(path, 'df_tst.csv')
+  
   df_tr = pd.read_csv(tr_path).iloc[:,[0,2]]
+  df_tr.columns = ['img_path' , 'class_id']
   tr_dataset = MyDataset(df_tr, img_transforms)
 
   df_val = pd.read_csv(val_path).iloc[:,[0,2]]
+  df_val.columns = ['img_path' , 'class_id']
   val_dataset = MyDataset(df_val, img_transforms)
 
   df_tst = pd.read_csv(tst_path).iloc[:,[0,2]]
+  df_tst.columns = ['img_path' , 'class_id']
   tst_dataset = MyDataset(df_tst, img_transforms)
 
   tr_loader = DataLoader(tr_dataset, batch_size=config['BATCH_SIZE'], shuffle=True, num_workers=num_workers)

@@ -109,7 +109,7 @@ class Preprocess():
       df_train_fold.to_csv(os.path.join(self.dir,'fold_{x}'.format(x = fold) , 'df_tr.csv') , index = False)
       df_val_fold.to_csv(os.path.join(self.dir,'fold_{x}'.format(x = fold),  'df_val.csv') , index = False)
 #__________________________________________________________________________________________________________________
-# class_ct = 107
-# p = Preprocess('Data/rgb', 'Data/hsi', pd.read_csv('Data/rgb.csv'), pd.read_csv('Data/hsi.csv'), class_ct)
-# p.concat_df() 
-# p.split_df(pd.read_csv('Data/{x}/df_final.csv'.format(x = class_ct)))
+class_ct = 107
+p = Preprocess('Data/rgb', 'Data/hsi', pd.read_csv('Data/rgb.csv'), pd.read_csv('Data/hsi.csv'), class_ct)
+p.concat_df() 
+p.split_df(pd.read_csv('Data/{x}/df_final.csv'.format(x = class_ct)))

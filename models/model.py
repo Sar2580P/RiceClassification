@@ -92,10 +92,10 @@ class HSIModel(nn.Module):
     self.config = config
     self.in_channels = self.config['in_channels']
     self.head = nn.Sequential(nn.Flatten(1) ,
-                              Dense(0.25 , 1024, 512), 
-                              Dense(0, 512, self.config['num_classes'])
+                              Dense(0.25 , 256, 128), 
+                              Dense(0, 128, self.config['num_classes'])
                 )
-    self.squeeze_channels = 100
+    self.squeeze_channels = 168
     self.base_model = self.get_base_model()
     self.model = nn.Sequential(
                 self.base_model ,
@@ -106,13 +106,13 @@ class HSIModel(nn.Module):
 
   def get_base_model(self):
     return nn.Sequential(
-        BandAttentionBlock(self.in_channels), 
-        SqueezeBlock(self.in_channels, self.squeeze_channels),
-        XceptionBlock(self.squeeze_channels, 128), 
-        XceptionBlock(128, 256) , 
+        # BandAttentionBlock(self.in_channels), 
+        # SqueezeBlock(self.in_channels, self.squeeze_channels),
+        # XceptionBlock(self.squeeze_channels, 128), 
+        XceptionBlock(168, 256) , 
         ResidualBlock(256, 256) ,
         XceptionBlock(256, 512), 
-        SeparableConvBlock(512, 1024), 
+        SeparableConvBlock(512, 256), 
         nn.MaxPool2d(kernel_size = (3,3) , stride = (2,2)) , 
         nn.AdaptiveAvgPool2d((1,1)) ,
     )
