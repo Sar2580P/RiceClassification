@@ -1,35 +1,41 @@
 
 # Modules for hsi-model
 
+from torch import Tensor
 import torch.nn as nn
 
 class Dense(nn.Module):
     def __init__(self, drop ,in_size, out_size):
       super(Dense ,self).__init__()
-      self.dropout = nn.Dropout(drop)
-      self.linear = nn.Linear(in_size, out_size)
-      self.prelu = nn.PReLU()
-
+      self.drop , self.in_size , self.out_size = drop , in_size , out_size
+      self.model = self.get_model()
+    def get_model(self):
+      return nn.Sequential(
+          nn.Dropout(self.drop), 
+          nn.Linear(self.in_size, self.out_size) , 
+          nn.PReLU()
+      )
     def forward(self, x):
-      x = self.dropout(x)
-      x = self.linear(x)
-      x = self.prelu(x)
-      return x
+      return self.model(x)
   
 #___________________________________________________________________________________________________________________
 
 class Conv2dBlock(nn.Module):
   def __init__(self , in_channels, out_channels, kernel_size=(3,3),padding = 'same',  stride = 1):
     super(Conv2dBlock, self).__init__()
-    self.batch = nn.BatchNorm2d(in_channels)
-    self.conv = nn.Conv2d(in_channels = in_channels , out_channels = out_channels , kernel_size = kernel_size ,padding = padding)
-    self.prelu = nn.PReLU()
+    self.in_channels , self.out_channels = in_channels , out_channels
+    self.kernel_size , self.padding , self.stride = kernel_size , padding , stride
+    self.model = self.get_model()
 
+  def get_model(self):
+    return nn.Sequential(
+        nn.BatchNorm2d(self.in_channels ),  
+        nn.PReLU(),
+        nn.Conv2d(in_channels = self.in_channels  , out_channels = self.out_channels , 
+                  kernel_size = self.kernel_size ,padding = self.padding)
+    )
   def forward(self, x):
-    x = self.batch(x)
-    x = self.prelu(x)
-    x = self.conv(x)
-    return x
+    return self.model(x)
   
 #___________________________________________________________________________________________________________________
 
@@ -98,34 +104,33 @@ class SeparableConvBlock(nn.Module):
 #___________________________________________________________________________________________________________________
 
 class SqueezeBlock(nn.Module):
-  def __init__(self, in_channel, out_channels):
+  def __init__(self, in_channels, out_channels):
     super(SqueezeBlock, self).__init__()
-    self.batch = nn.BatchNorm2d(in_channel)
-    self.conv1 = nn.Conv2d(in_channels = in_channel , out_channels = out_channels , kernel_size = (1,1))
+    self.in_channels, self.out_channels =  in_channels, out_channels
+    self.model = self.get_model()
 
+  def get_model(self):
+    return nn.Sequential(
+        nn.BatchNorm2d(self.in_channels), 
+        nn.Conv2d(in_channels = self.in_channels , out_channels = self.out_channels , kernel_size = (1,1))
+    )
   def forward(self, x):
-    x = self.batch(x)
-    return self.conv1(x)
-  
+   return self.model(x)
 #___________________________________________________________________________________________________________________
 
 class XceptionBlock(nn.Module):
   def __init__(self, in_channels, out_channels):
     super(XceptionBlock, self).__init__()
-    self.sep_conv1 = SeparableConvBlock(in_channel = in_channels , out_channels = out_channels)
-    self.sep_conv2 = SeparableConvBlock(in_channel = out_channels , out_channels = out_channels)
-    self.prelu = nn.PReLU()
-    self.max_pool = nn.MaxPool2d(kernel_size = (2,2) , stride = (2,2))
-    self.conv1_1 = nn.Conv2d(in_channels = in_channels , out_channels = out_channels , kernel_size = (1,1) , stride = (2,2))
-
+    self.in_channels , self.out_channels = in_channels , out_channels
     self.xception_model = self.get_model()
+    self.conv1_1 = nn.Conv2d(in_channels = self.in_channels , out_channels = self.out_channels , kernel_size = (1,1) , stride = (2,2))
 
   def get_model(self):
     return nn.Sequential(
-        self.sep_conv1 ,
-        self.prelu ,
-        self.sep_conv2 ,
-        self.max_pool ,
+        SeparableConvBlock(in_channel = self.in_channels , out_channels = self.out_channels) ,
+        nn.PReLU() ,
+        SeparableConvBlock(in_channel = self.out_channels , out_channels = self.out_channels) ,
+        nn.MaxPool2d(kernel_size = (2,2) , stride = (2,2)) ,
     )
   def forward(self, x):
     return self.conv1_1(x)+self.xception_model(x)    # side branch + main branch
@@ -133,18 +138,23 @@ class XceptionBlock(nn.Module):
 #___________________________________________________________________________________________________________________
 
 class ResidualBlock(nn.Module):
-  def __init__(self, in_channels , n = 10):
+  def __init__(self, in_channels , n = 3):
     super(ResidualBlock, self).__init__()
     # n : no. of seperable conv blocks in a residual block
-    self.sep_conv_blocks = [SeparableConvBlock(in_channel = in_channels , out_channels = in_channels) for i in range(n)]
+    
+    self.n = n 
+    self.in_channels  = in_channels
+    self.model = self.get_model()
 
-    self.model = nn.Sequential(*self.sep_conv_blocks)
+  def get_model(self):
+    self.sep_conv_blocks = [SeparableConvBlock(in_channel = self.in_channels , out_channels = self.in_channels) for i in range(self.n)]
+    return  nn.Sequential(*self.sep_conv_blocks)
 
   def forward(self, x):
     return x + self.model(x)    # side branch + main branch
 #___________________________________________________________________________________________________________________
-model = ResidualBlock(256)
-import torch
-print(model.model)
-(model.forward(torch.randn(1,256,124,140)))
+# model = ResidualBlock(256)
+# import torch
+# print(model.model)
+# (model.forward(torch.randn(1,256,124,140)))
 

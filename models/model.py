@@ -91,38 +91,43 @@ class HSIModel(nn.Module):
     super(HSIModel, self).__init__()
     self.config = config
     self.in_channels = self.config['in_channels']
-    self.head = nn.Sequential(nn.Flatten(1) ,
-                              Dense(0.25 , 256, 128), 
-                              Dense(0, 128, self.config['num_classes'])
-                )
+
     self.squeeze_channels = 168
-    self.base_model = self.get_base_model()
-    self.model = nn.Sequential(
-                self.base_model ,
-                self.head
-                        )
+    self.model = self.get_model()
     self.layer_lr = [{'params' : self.base_model.parameters()},{'params': self.head.parameters(), 'lr': self.config['lr'] * 1}]
 
 
-  def get_base_model(self):
-    return nn.Sequential(
+  def get_model(self):
+    self.head = nn.Sequential(
+                  nn.Flatten(1) ,
+                  Dense(0.25 , 1024, 256), 
+                  Dense(0, 256, self.config['num_classes'])
+    )
+    self.base_model = nn.Sequential(
         # BandAttentionBlock(self.in_channels), 
         # SqueezeBlock(self.in_channels, self.squeeze_channels),
-        # XceptionBlock(self.squeeze_channels, 128), 
-        XceptionBlock(168, 256) , 
-        ResidualBlock(256, 256) ,
+        XceptionBlock(self.squeeze_channels, 128), 
+        XceptionBlock(128, 256), 
+        ResidualBlock(256, 8),
         XceptionBlock(256, 512), 
-        SeparableConvBlock(512, 256), 
+        SeparableConvBlock(512, 1024), 
         nn.MaxPool2d(kernel_size = (3,3) , stride = (2,2)) , 
         nn.AdaptiveAvgPool2d((1,1)) ,
     )
+    return nn.Sequential(
+                  self.base_model ,
+                  self.head
+                        )
+    
   def forward(self, x):
     return self.model(x)
 #___________________________________________________________________________________________________________________
 
 # model = HSIModel({'lr': 0.001, 'num_classes': 107, 'in_channels': 168})
-
-
+# print(model.base_model)
+# write to txt file
+# with open('models/hsi/model.txt', 'w') as f:
+#     print(model, file=f)
     
 # model = EffecientNet({'lr': 0.001, 'num_classes': 107})
 # print(model.base_model)
