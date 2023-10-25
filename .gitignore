@@ -26,3 +26,8 @@ models/rgb/enet/confusion_matrix.csv
 models/rgb/google_net/ckpts
 models/rgb/google_net/confusion_matrix.csv
 models/rgb/google_net/rgb_google_net_logs
+models/hsi/xception/sk_fold_test_results.pkl
+lightning_logs
+models/rgb/resnet/sk_fold_test_results.pkl
+models/rgb/google_net/sk_fold_test_results.pkl
+models/rgb/enet/sk_fold_test_results.pkl

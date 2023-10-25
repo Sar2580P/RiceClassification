@@ -1,3 +1,5 @@
+from codecs import ignore_errors
+from matplotlib import axis
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -8,17 +10,16 @@ xception_conf_mat = 'models/hsi/xception/confusion_matrix.csv'
 
 df_resnet = pd.read_csv(resnet_conf_mat)
 df_enet = pd.read_csv(enet_conf_mat)
-df_gnet = pd.read_excel(gnet_conf_mat)
-df_xception = pd.read_excel(xception_conf_mat)
-
+df_gnet = pd.read_csv(gnet_conf_mat)
+df_xception = pd.read_csv(xception_conf_mat)
 
 
 def calculate_in_class_accuracies(df):
+    df.drop('Unnamed: 0' , axis=1, inplace=True)
     confusion_matrix = df.to_numpy()
 
     # Calculate the diagonal of the confusion matrix.
     diagonal = np.diag(confusion_matrix)
-
     # Calculate the total number of predictions for each class.
     class_totals = np.sum(confusion_matrix, axis=1)
 
