@@ -141,5 +141,4 @@ class ResidualBlock(nn.Module):
 
   def forward(self, x):
     return x + self.model(x)    # side branch + main branch
-  
 #___________________________________________________________________________________________________________________
