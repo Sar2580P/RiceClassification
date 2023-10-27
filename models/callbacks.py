@@ -30,5 +30,9 @@ img_transforms = transforms.Compose([
    ])
 
 hsi_img_transforms = transforms.Compose([
-  transforms.ToTensor(), 
+   transforms.ToTensor(), 
+   transforms.RandomHorizontalFlip(p=0.32),
+   transforms.RandomVerticalFlip(p=0.32),
+   transforms.RandomAffine(degrees=5, translate=(0.1, 0.1), scale=(0.8, 1.2)),
+   
 ])
