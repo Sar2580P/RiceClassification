@@ -104,7 +104,7 @@ class HSIModel(nn.Module):
   def get_model(self):
     self.head = nn.Sequential(
                   nn.Flatten(1) ,
-                  Dense(0.25 , 1024, 256), 
+                  Dense(0.4 , 1024, 256), 
                   Dense(0, 256, self.config['num_classes'])
     )
     self.base_model = nn.Sequential(
@@ -112,7 +112,7 @@ class HSIModel(nn.Module):
         # SqueezeBlock(self.in_channels, self.squeeze_channels),
         XceptionBlock(self.squeeze_channels, 128), 
         XceptionBlock(128, 256), 
-        ResidualBlock(256, 8),
+        ResidualBlock(256, 5),
         XceptionBlock(256, 512), 
         SeparableConvBlock(512, 1024), 
         nn.MaxPool2d(kernel_size = (3,3) , stride = (2,2)) , 
@@ -124,6 +124,7 @@ class HSIModel(nn.Module):
                         )
     
   def forward(self, x):
+  
     return self.model(x)
 #___________________________________________________________________________________________________________________
 
