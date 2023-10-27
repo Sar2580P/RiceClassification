@@ -21,7 +21,7 @@ num_workers = 8
 model = Classifier(model_obj)
 
 trainer = Trainer(callbacks=[early_stop_callback, checkpoint_callback, rich_progress_bar, rich_model_summary], 
-                  max_epochs=30)  
+                  max_epochs=100)  
 path = 'Data/107'
 test_results = []
 
