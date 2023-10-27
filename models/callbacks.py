@@ -22,7 +22,7 @@ checkpoint_callback = ModelCheckpoint(
     save_top_k=2,
     verbose=True,
  )
-img_transforms = transforms.Compose([
+rgb_transforms = transforms.Compose([
       transforms.RandomHorizontalFlip(p=0.32),
       transforms.RandomVerticalFlip(p=0.32),
       transforms.RandomAffine(degrees=5, translate=(0.1, 0.1), scale=(0.8, 1.2)),
