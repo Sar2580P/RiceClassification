@@ -1,0 +1,11 @@
+dir : 'models/ensemble/logs'
+
+num_classes : 107
+
+BATCH_SIZE : 32
+lr : 0.0001
+
+in_channels : 168
+weight_decay : 0.0001
+ckpt_file_name : 'ensemble--{epoch}-{val_loss:.2f}-{val_accuracy:.2f}'
+model_name : 'rice_ensemble'

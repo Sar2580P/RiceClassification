@@ -8,19 +8,22 @@ class Resnet():
   # https://pytorch.org/vision/main/models/generated/torchvision.models.resnet101.html
   def __init__(self, config ):
     self.config = config
+    
+    self.__create_model__()
+    self.layer_lr = [{'params' : self.base_model.parameters()},{'params': self.head.parameters(), 'lr': self.config['lr'] * 100}]
+    self.model = self.get_model()
+
+
+  def get_model(self):
     self.resnet = torchvision.models.resnet101(weights = 'ResNet101_Weights.DEFAULT', progress = True)
     self.base_model = nn.Sequential(*list(self.resnet.children())[:-1])
 
-    self.__create_model__()
-    self.layer_lr = [{'params' : self.base_model.parameters()},{'params': self.head.parameters(), 'lr': self.config['lr'] * 100}]
-
-  def __create_model__(self):
     self.head = nn.Sequential(
                 Dense(0.2 , 2048 ,1024), 
                 Dense(0.15, 1024, 512) ,
                 Dense(0, 512, self.config['num_classes'])
     )
-    self.model = nn.Sequential(
+    return nn.Sequential(
                 self.base_model ,
                 nn.Flatten(), 
                 self.head ,
@@ -34,23 +37,24 @@ class EffecientNet():
   # https://pytorch.org/vision/stable/models/generated/torchvision.models.efficientnet_v2_l.html#torchvision.models.efficientnet_v2_l
   def __init__(self, config):
     self.config = config
-    self.enet = torchvision.models.efficientnet_v2_l( weights='DEFAULT' , progress = True)    # 'DEFAULT'  : 'IMAGENET1K_V1'
-    self.base_model = nn.Sequential(*list(self.enet.children())[:-1])
-
-    self.__create_model__()
+    
+    self.model = self.get_model()
     self.layer_lr = [{'params' : self.base_model.parameters()},{'params': self.head.parameters(), 'lr': self.config['lr'] * 100}]
 
-  def __create_model__(self): 
+  def get_model(self): 
     self.head = nn.Sequential(
                 nn.Flatten(1) ,
                 Dense(0.2 , 1280 ,512), 
                 Dense(0, 512, self.config['num_classes'])
     )
-    self.model = nn.Sequential(
+
+    self.enet = torchvision.models.efficientnet_v2_l( weights='DEFAULT' , progress = True)    # 'DEFAULT'  : 'IMAGENET1K_V1'
+    self.base_model = nn.Sequential(*list(self.enet.children())[:-1])
+
+    return nn.Sequential(
                   self.base_model ,
                   self.head
-                        )  
-    return 
+                        )   
     
   def forward(self, x):
     return self.model(x)
@@ -63,23 +67,23 @@ class GoogleNet():
   # https://pytorch.org/vision/stable/models/generated/torchvision.models.efficientnet_v2_l.html#torchvision.models.efficientnet_v2_l
   def __init__(self, config):
     self.config = config
-    self.gnet = torchvision.models.googlenet( weights='DEFAULT' , progress = True)    # 'DEFAULT'  : 'IMAGENET1K_V1'
-    self.base_model = nn.Sequential(*list(self.gnet.children())[:-2])
+    
 
-    self.__create_model__()
+    self.model = self.get_model()
     self.layer_lr = [{'params' : self.base_model.parameters()},{'params': self.head.parameters(), 'lr': self.config['lr'] * 100}]
 
-  def __create_model__(self): 
+  def get_model(self): 
     self.head = nn.Sequential(
                 nn.Flatten(1) ,
                 Dense(0.2 , 1024 ,512), 
                 Dense(0, 512, self.config['num_classes'])
     )
-    self.model = nn.Sequential(
+    self.gnet = torchvision.models.googlenet( weights='DEFAULT' , progress = True)    # 'DEFAULT'  : 'IMAGENET1K_V1'
+    self.base_model = nn.Sequential(*list(self.gnet.children())[:-2])
+    return nn.Sequential(
                   self.base_model ,
                   self.head
-                        )  
-    return 
+                        )   
     
   def forward(self, x):
     return self.model(x)  
