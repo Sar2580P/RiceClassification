@@ -14,12 +14,12 @@ config = {
 
 df_tr = pd.read_csv(config['tr_path']).iloc[:,[0,2]]
 df_tr.columns = ['img_path' , 'class_id']
-tr_dataset = MyDataset(df_tr, img_transforms)
+tr_dataset = MyDataset(df_tr, rgb_transforms)
 
 df_val = pd.read_csv(config['val_path']).iloc[:,[0,2]]
 df_val.columns = ['img_path' , 'class_id']
-val_dataset = MyDataset(df_val, img_transforms)
+val_dataset = MyDataset(df_val, rgb_transforms)
 
 df_tst = pd.read_csv(config['tst_path']).iloc[:,[0,2]]
 df_tst.columns = ['img_path' , 'class_id']
-tst_dataset = MyDataset(df_tst, img_transforms)
+tst_dataset = MyDataset(df_tst, rgb_transforms)

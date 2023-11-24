@@ -133,7 +133,9 @@ class XceptionBlock(nn.Module):
         nn.MaxPool2d(kernel_size = (2,2) , stride = (2,2)) ,
     )
   def forward(self, x):
-    return self.conv1_1(x)+self.xception_model(x)    # side branch + main branch
+    a = self.conv1_1(x)
+    b = self.xception_model(x)
+    return a+b   # side branch + main branch
   
 #___________________________________________________________________________________________________________________
 

@@ -17,6 +17,9 @@ torch.set_float32_matmul_precision('high')
 
 model_obj = HSIModel(config)
 
+hsi_ckpt = os.path.join('models/hsi/xception/ckpts' , os.listdir('models/hsi/xception/ckpts')[-1])
+model = Classifier.load_from_checkpoint(hsi_ckpt, model_obj=model_obj)
+
 #___________________________________________________________________________________________________________________
 num_workers = 8
 tr_loader = DataLoader(tr_dataset, batch_size=config['BATCH_SIZE'], shuffle=True, num_workers=num_workers)
@@ -24,7 +27,7 @@ val_loader = DataLoader(val_dataset, batch_size=config['BATCH_SIZE'], shuffle=Fa
 tst_loader = DataLoader(tst_dataset, batch_size=config['BATCH_SIZE'], shuffle=False, num_workers=num_workers)
 
 #___________________________________________________________________________________________________________________
-model = Classifier(model_obj)
+# model = Classifier(model_obj)
 
 checkpoint_callback.dirpath = os.path.join(config['dir'], 'ckpts')
 checkpoint_callback.filename = config['ckpt_file_name']
@@ -33,7 +36,7 @@ wandb_logger = WandbLogger(project=config['model_name'])
 csv_logger = CSVLogger(config['dir'], name=config['model_name']+'_logs')
 
 trainer = Trainer(callbacks=[early_stop_callback, checkpoint_callback, rich_progress_bar, rich_model_summary], 
-                  accelerator = 'gpu' ,max_epochs=10, logger=[wandb_logger,csv_logger])  
+                  accelerator = 'gpu' ,max_epochs=300, logger=[wandb_logger,csv_logger])  
  
 trainer.fit(model, tr_loader, val_loader)
 trainer.test(model, tst_loader)

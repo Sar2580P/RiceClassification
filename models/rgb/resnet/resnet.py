@@ -34,7 +34,7 @@ wandb_logger = WandbLogger(project=config['model_name'])
 csv_logger = CSVLogger(config['dir'], name=config['model_name']+'_logs')
 
 trainer = Trainer(callbacks=[early_stop_callback, checkpoint_callback, rich_progress_bar, rich_model_summary], 
-                  max_epochs=50, logger=[wandb_logger,csv_logger])  
+                  max_epochs=100, logger=[wandb_logger,csv_logger])  
  
 trainer.fit(model, tr_loader, val_loader)
 trainer.test(model, tst_loader)

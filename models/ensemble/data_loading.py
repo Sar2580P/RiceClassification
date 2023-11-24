@@ -37,7 +37,7 @@ class EnsembleDataset(Dataset):
     
     rgb_img_tensor = self.rgb_transforms(rgb_img_tensor)
     hsi_img_tensor = self.hsi_transforms(hsi_img_tensor)
-    return hsi_img_tensor, rgb_img_tensor, y
+    return (hsi_img_tensor, rgb_img_tensor), y
   
   def __msc_correction__(self, hsi_image):
 
@@ -70,7 +70,7 @@ df_tr = pd.read_csv(config['tr_path'])
 tr_dataset = EnsembleDataset(df_tr, rgb_transforms , hsi_img_transforms)
 
 df_val = pd.read_csv(config['val_path'])
-val_dataset = EnsembleDataset(df_val, hsi_img_transforms)
+val_dataset = EnsembleDataset(df_val, rgb_transforms, hsi_img_transforms)
 
 df_tst = pd.read_csv(config['tst_path'])
-tst_dataset = EnsembleDataset(df_tst, hsi_img_transforms)
+tst_dataset = EnsembleDataset(df_tst, rgb_transforms, hsi_img_transforms)

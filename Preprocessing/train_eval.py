@@ -12,6 +12,7 @@ class Classifier(pl.LightningModule):
   def __init__(self, model_obj):
     super().__init__()
     self.model = model_obj.model
+    self.model_obj = model_obj
     self.config = model_obj.config
     self.layer_lr = model_obj.layer_lr
 
@@ -31,7 +32,7 @@ class Classifier(pl.LightningModule):
 
   def training_step(self, batch, batch_idx):
     x, y = batch
-    y_hat = self.model(x)
+    y_hat = self.model_obj.forward(x)
     loss = self.criterion(y_hat, y.long())
     self.log("train_loss", loss,on_step = False ,on_epoch=True, prog_bar=True, logger=True)
     self.tr_accuracy(y_hat, y)
@@ -42,7 +43,7 @@ class Classifier(pl.LightningModule):
   
   def validation_step(self, batch, batch_idx):
     x, y = batch
-    y_hat = self.model(x)
+    y_hat = self.model_obj.forward(x)
     loss = self.criterion(y_hat, y.long())
     self.log("val_loss", loss, on_epoch=True, prog_bar=True, logger=True)
     self.val_accuracy(y_hat, y)
@@ -53,7 +54,7 @@ class Classifier(pl.LightningModule):
   
   def test_step(self, batch, batch_idx):
     x, y = batch
-    y_hat = self.model(x)
+    y_hat = self.model_obj.forward(x)
     self.y_hat.append(y_hat)
     self.y_true.append(y)
     loss = self.criterion(y_hat, y.long())
@@ -75,7 +76,9 @@ class Classifier(pl.LightningModule):
     
   def configure_optimizers(self):
     optim =  torch.optim.Adam(self.layer_lr, lr = self.config['lr'], weight_decay = self.config['weight_decay'])   # https://pytorch.org/docs/stable/optim.html
-    lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optim, patience=3, factor=0.5, threshold=0.001, cooldown =2,verbose=True)
+    # lr_scheduler_1 = torch.optim.lr_scheduler.ReduceLROnPlateau(optim, patience=5, factor=0.5, threshold=0.01, cooldown =2,verbose=True)
+    lr_scheduler = torch.optim.lr_scheduler.ExponentialLR(optim,gamma = 0.965 ,last_epoch=-1,   verbose=True)
+    
     return [optim], [{'scheduler': lr_scheduler, 'interval': 'epoch', 'monitor': 'train_loss', 'name': 'lr_scheduler'}]
 
 #___________________________________________________________________________________________________________________

@@ -35,11 +35,11 @@ in_class_accuracies_xception = calculate_in_class_accuracies(df_xception)
 
 
 arr = np.stack((in_class_accuracies_resnet, in_class_accuracies_enet, 
-                in_class_accuracies_gnet, in_class_accuracies_xception)).transpose()
-
+                 in_class_accuracies_gnet,in_class_accuracies_xception)).transpose()
+# 
 fig, axs = plt.subplots(107, 1, figsize=(20, 200))
 fig.tight_layout(pad=7.0)
-models = ['ResNet', 'EfficientNet', 'GoogleNet', 'Xception']
+models = ['ResNet', 'EfficientNet','GoogleNet', 'Xception']  # 
 
 for i , per_class_acc in enumerate(arr):
     axs[i].barh(models,per_class_acc, color = ['red', 'green', 'blue', 'orange'])

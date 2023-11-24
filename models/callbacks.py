@@ -6,7 +6,7 @@ from  pytorch_lightning.callbacks.progress.rich_progress import RichProgressBarT
 
 early_stop_callback = EarlyStopping(
    monitor='val_loss',
-   min_delta=0.005,
+   min_delta=0.001,
    patience=10,
    verbose=True,
    mode='min'
@@ -15,11 +15,11 @@ early_stop_callback = EarlyStopping(
 theme = RichProgressBarTheme(metrics='green', time='yellow', progress_bar_finished='#8c53e0' ,progress_bar='#c99e38')
 rich_progress_bar = RichProgressBar(theme=theme)
 
-rich_model_summary = RichModelSummary(max_depth=3)
+rich_model_summary = RichModelSummary(max_depth=5)
 
 checkpoint_callback = ModelCheckpoint(
     monitor='val_loss',
-    save_top_k=2,
+    save_top_k=3,
     verbose=True,
  )
 rgb_transforms = transforms.Compose([
