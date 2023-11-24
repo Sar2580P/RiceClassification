@@ -31,3 +31,5 @@ lightning_logs
 models/rgb/resnet/sk_fold_test_results.pkl
 models/rgb/google_net/sk_fold_test_results.pkl
 models/rgb/enet/sk_fold_test_results.pkl
+models/ensemble/logs
+models/ensemble/logs/ckpts
