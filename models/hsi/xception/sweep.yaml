@@ -1,0 +1,11 @@
+method: bayes
+metric:
+  goal: minimize
+  name: val_loss
+parameters:
+  lr:
+    max: 7.0e-05
+    min: 8.4e-06
+  weight_decay:
+    max: 7.0e-06
+    min: 1.2e-06
