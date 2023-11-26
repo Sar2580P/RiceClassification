@@ -3,7 +3,7 @@ import pandas as pd
 import os 
 import matplotlib.pyplot as plt
 from sympy import plot
-import seaborn as sns
+# import seaborn as sns
 
 BASE_PATH = 'Data/hsi'
 df = pd.read_csv('Data/hsi.csv')
@@ -25,7 +25,7 @@ def full_distribution(data):
         j+=1
   distribution_df.to_csv('models/hsi/hsi_distribution.csv', index=False)
 
-full_distribution(data)
+# full_distribution(data)
 df = pd.read_csv('models/hsi/hsi_distribution.csv')
 
 
@@ -42,7 +42,7 @@ def plot_distribution(df):
     axs[r,c].scatter(channel_df['mean'], channel_df['std'], color = 'red', marker = 'o')
     axs[r,c].set_title(f'Channel-{channel}')
     axs[r,c].set_xlabel('mean')
-    axs[r,c].se_xticks(rotate = 90)
+    axs[r,c].set_xticks(rotate = 90)
     axs[r,c].set_ylabel('std')
   plt.savefig('models/hsi/mean_distribution.png')
 

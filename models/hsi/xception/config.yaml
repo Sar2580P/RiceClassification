@@ -3,7 +3,7 @@ dir : 'models/hsi/xception'
 num_classes : 107
 
 BATCH_SIZE : 32
-lr : 0.00000084
+lr : 0.000084
 
 in_channels : 168
 weight_decay : 0.000002
