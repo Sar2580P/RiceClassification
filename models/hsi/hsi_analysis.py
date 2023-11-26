@@ -25,24 +25,26 @@ def full_distribution(data):
         j+=1
   distribution_df.to_csv('models/hsi/hsi_distribution.csv', index=False)
 
-full_distribution(data)
+# full_distribution(data)
 df = pd.read_csv('models/hsi/hsi_distribution.csv')
 
 
 def plot_distribution(df):
+  print(123)
   df['channel'] = df['channel'].astype(int)
   channels = df['channel'].unique()
-  # print(channels)
+  print(channels)
 
   fig, axs = plt.subplots(42, 4, figsize=(30, 200))
   fig.tight_layout(pad=7.0)
   for i , channel in enumerate(channels):
+    print(i)
     r,c = i//4 , i%4
     channel_df = df[df['channel'] == channel]
     axs[r,c].scatter(channel_df['mean'], channel_df['std'], color = 'red', marker = 'o')
     axs[r,c].set_title(f'Channel-{channel}')
     axs[r,c].set_xlabel('mean')
-    axs[r,c].se_xticks(rotate = 90)
+    # axs[r,c].set_xticks(rotate = 90)
     axs[r,c].set_ylabel('std')
   plt.savefig('models/hsi/mean_distribution.png')
 
