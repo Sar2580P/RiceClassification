@@ -73,11 +73,12 @@ class Classifier(pl.LightningModule):
     
     df = pd.DataFrame(cm , columns = [str(i) for i in range(self.config['num_classes'])])
     df.to_csv(os.path.join(self.config['dir'], 'confusion_matrix.csv'))
+
     
   def configure_optimizers(self):
     optim =  torch.optim.Adam(self.layer_lr, lr = self.config['lr'], weight_decay = self.config['weight_decay'])   # https://pytorch.org/docs/stable/optim.html
-    # lr_scheduler_1 = torch.optim.lr_scheduler.ReduceLROnPlateau(optim, patience=5, factor=0.5, threshold=0.01, cooldown =2,verbose=True)
-    lr_scheduler = torch.optim.lr_scheduler.ExponentialLR(optim,gamma = 0.965 ,last_epoch=-1,   verbose=True)
+    lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optim, patience=3, factor=0.7, threshold=0.005, cooldown =2,verbose=True)
+    # lr_scheduler = torch.optim.lr_scheduler.ExponentialLR(optim,gamma = 0.995 ,last_epoch=-1,   verbose=True)
     
     return [optim], [{'scheduler': lr_scheduler, 'interval': 'epoch', 'monitor': 'train_loss', 'name': 'lr_scheduler'}]
 
@@ -95,7 +96,7 @@ class MyDataset(Dataset):
     y =  self.Y[idx]
     img_tensor = None
     img_path = self.df.img_path.iloc[idx]
-    if img_path.lower().split('.')[-1] == 'jpg':
+    if img_path.lower().split('.')[-1] == 'png':
       img_tensor = Image.open(img_path)
     else :
       img_tensor = np.load(img_path)

@@ -10,12 +10,11 @@ from pytorch_lightning import Trainer
 from pytorch_lightning.loggers import WandbLogger, CSVLogger
 from data_loading import *
 
-
 config_path = 'models/hsi/xception/config.yaml'
 config = load_config(config_path)
 torch.set_float32_matmul_precision('high')
 
-# model_obj = HSIModel(config)
+model_obj = HSIModel(config)
 
 # hsi_ckpt = os.path.join('models/hsi/xception/ckpts' , os.listdir('models/hsi/xception/ckpts')[-1])
 # model = Classifier.load_from_checkpoint(hsi_ckpt, model_obj=model_obj)
@@ -27,16 +26,20 @@ val_loader = DataLoader(val_dataset, batch_size=config['BATCH_SIZE'], shuffle=Fa
 tst_loader = DataLoader(tst_dataset, batch_size=config['BATCH_SIZE'], shuffle=False, num_workers=num_workers)
 
 #___________________________________________________________________________________________________________________
-# model = Classifier(model_obj)
+model = Classifier(model_obj)
 
-# checkpoint_callback.dirpath = os.path.join(config['dir'], 'ckpts')
-# checkpoint_callback.filename = config['ckpt_file_name']
+checkpoint_callback.dirpath = os.path.join(config['dir'], 'ckpts')
+checkpoint_callback.filename = config['ckpt_file_name']
 
-# wandb_logger = WandbLogger(project=config['model_name'])
-# csv_logger = CSVLogger(config['dir'], name=config['model_name']+'_logs')
 
-# trainer = Trainer(callbacks=[early_stop_callback, checkpoint_callback, rich_progress_bar, rich_model_summary], 
-#                   accelerator = 'cpu' ,max_epochs=1, logger=[wandb_logger,csv_logger])  
+run_name = f"lr_{config['lr']} *** bs{config['BATCH_SIZE']} *** decay_{config['weight_decay']}"
+wandb_logger = WandbLogger(project=config['model_name'], name = run_name , log_model='all')
+csv_logger = CSVLogger(config['dir'], name=config['model_name']+'_logs')
+
+
+trainer = Trainer(callbacks=[early_stop_callback, checkpoint_callback, rich_progress_bar, rich_model_summary], 
+                  accelerator = 'gpu' ,max_epochs=200, logger=[wandb_logger,csv_logger])  
  
-# trainer.fit(model, tr_loader, val_loader)
-# trainer.test(model, tst_loader)
+trainer.fit(model, tr_loader, val_loader)
+trainer.test(model, tst_loader)
+

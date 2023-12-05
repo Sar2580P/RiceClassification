@@ -52,7 +52,7 @@ class Ensemble(nn.Module):
     self.config = config
 
     self.model = nn.Sequential(
-                    Dense(drop = 0.25 , in_size = 1536, out_size = 1024, ), 
+                    Dense(drop = 0.25 , in_size = 1408, out_size = 1024, ), 
                     Dense(drop = 0.15 , in_size = 1024, out_size = 256, ), 
                     Dense(drop = 0 , in_size = 256, out_size = self.config['num_classes']),
                     )
@@ -85,12 +85,13 @@ model = Classifier(model_obj= model_obj)
 checkpoint_callback.dirpath = os.path.join(config['dir'], 'ckpts')
 checkpoint_callback.filename = config['ckpt_file_name']
 
-wandb_logger = WandbLogger(project=config['model_name'])
+run_name = f"lr_{config['lr']} *** bs{config['BATCH_SIZE']} *** decay_{config['weight_decay']}"
+wandb_logger = WandbLogger(project=config['model_name'], name = run_name)
 csv_logger = CSVLogger(config['dir'], name=config['model_name']+'_logs')
 
 #_______________________________________________________________________________________________________________________
 trainer = Trainer(callbacks=[early_stop_callback, checkpoint_callback, rich_progress_bar, rich_model_summary], 
-                  accelerator = 'gpu' ,max_epochs=100, logger=[wandb_logger,csv_logger])  
+                  accelerator = 'gpu' ,max_epochs=200, logger=[wandb_logger,csv_logger])  
  
 trainer.fit(model, tr_loader, val_loader)
 trainer.test(model, tst_loader)

@@ -1,5 +1,3 @@
-from codecs import ignore_errors
-from matplotlib import axis
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -31,18 +29,23 @@ def calculate_in_class_accuracies(df):
 in_class_accuracies_resnet = calculate_in_class_accuracies(df_resnet)
 in_class_accuracies_enet = calculate_in_class_accuracies(df_enet)
 in_class_accuracies_gnet = calculate_in_class_accuracies(df_gnet)
-in_class_accuracies_xception = calculate_in_class_accuracies(df_xception)
+# in_class_accuracies_xception = calculate_in_class_accuracies(df_xception)
+
+print(in_class_accuracies_resnet.shape)
+print(in_class_accuracies_enet.shape)
+print(in_class_accuracies_gnet.shape)
+# print(in_class_accuracies_xception.shape)
 
 
 arr = np.stack((in_class_accuracies_resnet, in_class_accuracies_enet, 
-                 in_class_accuracies_gnet,in_class_accuracies_xception)).transpose()
+                 in_class_accuracies_gnet)).transpose()
 # 
-fig, axs = plt.subplots(107, 1, figsize=(20, 200))
+fig, axs = plt.subplots(96, 1, figsize=(20, 200))
 fig.tight_layout(pad=7.0)
-models = ['ResNet', 'EfficientNet','GoogleNet', 'Xception']  # 
+models = ['ResNet', 'EfficientNet','GoogleNet']  # 
 
 for i , per_class_acc in enumerate(arr):
-    axs[i].barh(models,per_class_acc, color = ['red', 'green', 'blue', 'orange'])
+    axs[i].barh(models,per_class_acc, color = ['red', 'green', 'blue'])
     axs[i].yaxis.set_tick_params(pad=10)
     axs[i].set_xlim([0,1])
     axs[i].set_xlabel('Accuracy')
