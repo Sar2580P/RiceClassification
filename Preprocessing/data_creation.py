@@ -1,8 +1,6 @@
-import enum
 import os, sys
 import pandas as pd
 import json
-import matplotlib.pyplot as plt
 sys.path.append(os.getcwd())
 from utils import *
 from sklearn.model_selection import train_test_split
@@ -15,13 +13,16 @@ def segment_images():
   id_to_class = {}
   ct = 0
   rootdir = "dataset_v1"
-  final_dir = "Data/hsi"
+  final_dir_hsi = "Data/hsi"
+  final_dir_rgb = "Data/rgb"
+  df_rgb = pd.DataFrame(columns=['path', 'class_id']) 
+  df_hsi = pd.DataFrame(columns=['path', 'class_id'])
 
-  df = pd.DataFrame(columns=['image_name', 'class_id'])
   skip_ct = 0
   for dirpath, dirnames, _ in os.walk(rootdir):
     
       for dirname in dirnames:
+          print(ct , dirname)
           path = os.path.join(dirpath, dirname)
           class_ = dirname
           if class_ not in class_to_id:
@@ -31,9 +32,19 @@ def segment_images():
 
           for dirpath_, _, filenames in os.walk(path):
             for file in filenames:
-                if not file.lower().endswith(".bil"):
-                    continue
-                img_path = os.path.join(dirpath_, file)
+              img_path = os.path.join(dirpath_, file)
+
+              if  file.lower().endswith(".jpg"):
+                start=0
+                if file[-5]=='2':
+                  start = 72
+                contour_images, count = create_cropping_jpg(img_path)
+                
+                for i, img in enumerate(contour_images):
+                  cv2.imwrite(os.path.join(final_dir_rgb, '{ct}_{i}.png'.format(ct = ct-1 ,i=i+start)), img)
+                  df_rgb.loc[len(df_rgb)] = ['{ct}-{i}.png'.format(ct = ct-1 ,i=i+start), ct-1]
+
+              elif  file.lower().endswith(".bil"):
                 start=0
                 if file[-5]=='2':
                   start = 72
@@ -45,24 +56,23 @@ def segment_images():
                 for i, seed_image in enumerate(images):
                   name = '{}_{}.npy'.format(ct-1, start+i)
                   try:
-                    # cv2.imwrite(os.path.join(final_dir, name), seed_image)
-                    np.save(os.path.join(final_dir, name), seed_image)
+                    np.save(os.path.join(final_dir_hsi, name), seed_image)
+                    df_hsi.loc[len(df_hsi)] = [name, ct-1]
                   except:
-                    print("error in writing ", file)
-                    
-                  df.loc[len(df)] = [name, ct-1]
-              
-                  
-          
-
-  print("\n\nskipped ", skip_ct, " images")      
-  df.to_csv("Data/hsi.csv", index=False)
+                    print("error in writing hsi images", file)
+                    skip_ct += 1
+             
+                                            
+  df_rgb.to_csv('Data/rgb.csv', index = False)
+  df_hsi.to_csv('Data/hsi.csv', index = False)
+  print("\n\nskipped ", skip_ct, " images") 
   mappings = {'class_to_id': class_to_id, 'id_to_class': id_to_class}
 
   j = json.dumps(mappings, indent=4)
   with open('Data/mappings.json', 'w') as f:
       print(j, file=f)  
 
+segment_images()
 #__________________________________________________________________________________________________________________
 
 class Preprocess():
@@ -109,7 +119,7 @@ class Preprocess():
       df_train_fold.to_csv(os.path.join(self.dir,'fold_{x}'.format(x = fold) , 'df_tr.csv') , index = False)
       df_val_fold.to_csv(os.path.join(self.dir,'fold_{x}'.format(x = fold),  'df_val.csv') , index = False)
 #__________________________________________________________________________________________________________________
-class_ct = 107
-p = Preprocess('Data/rgb', 'Data/hsi', pd.read_csv('Data/rgb.csv'), pd.read_csv('Data/hsi.csv'), class_ct)
-p.concat_df() 
-p.split_df(pd.read_csv('Data/{x}/df_final.csv'.format(x = class_ct)))
+# class_ct = 107
+# p = Preprocess('Data/rgb', 'Data/hsi', pd.read_csv('Data/rgb.csv'), pd.read_csv('Data/hsi.csv'), class_ct)
+# p.concat_df() 
+# p.split_df(pd.read_csv('Data/{x}/df_final.csv'.format(x = class_ct)))
