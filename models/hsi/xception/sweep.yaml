@@ -4,7 +4,7 @@ metric:
   name: val_loss
 parameters:
   lr:
-    max: 7.0e-05
+    max: 7.0e-04
     min: 8.4e-06
   weight_decay:
     max: 7.0e-06

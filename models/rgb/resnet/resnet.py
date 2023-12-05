@@ -30,11 +30,12 @@ model = Classifier(model_obj)
 checkpoint_callback.dirpath = os.path.join(config['dir'], 'ckpts')
 checkpoint_callback.filename = config['ckpt_file_name']
 
-wandb_logger = WandbLogger(project=config['model_name'])
+run_name = f"lr_{config['lr']} *** bs{config['BATCH_SIZE']} *** decay_{config['weight_decay']}"
+wandb_logger = WandbLogger(project=config['model_name'] , name = run_name)
 csv_logger = CSVLogger(config['dir'], name=config['model_name']+'_logs')
 
 trainer = Trainer(callbacks=[early_stop_callback, checkpoint_callback, rich_progress_bar, rich_model_summary], 
-                  max_epochs=100, logger=[wandb_logger,csv_logger])  
+                  max_epochs=200, logger=[wandb_logger,csv_logger])  
  
 trainer.fit(model, tr_loader, val_loader)
 trainer.test(model, tst_loader)
