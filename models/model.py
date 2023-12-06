@@ -90,11 +90,11 @@ class GoogleNet():
 #___________________________________________________________________________________________________________________
 
 class HSIModel(nn.Module):
-  def __init__(self , config):
+  def __init__(self , config, n_res_blocks = 8):
     super(HSIModel, self).__init__()
     self.config = config
     self.in_channels = self.config['in_channels']
-
+    self.n_res_blocks = n_res_blocks
     self.squeeze_channels = self.config['in_channels']
     self.model = self.get_model()
     self.layer_lr = [{'params' : self.base_model.parameters()},{'params': self.head.parameters(), 'lr': self.config['lr'] * 1}]
@@ -106,13 +106,14 @@ class HSIModel(nn.Module):
                   Dense(0.2 , 512, 256), 
                   Dense(0.15, 256, 128), 
     )
+    li = [ResidualBlock(256) for i in range(self.n_res_blocks)]
     self.base_model = nn.Sequential(
         BandAttentionBlock(self.in_channels), 
         # SqueezeBlock(self.in_channels, self.squeeze_channels),
         XceptionBlock(self.squeeze_channels, 512), 
         XceptionBlock(512, 512), 
         XceptionBlock(512, 256),
-        ResidualBlock(256, 12),
+        **li, 
         # XceptionBlock(128, 256), 
         SeparableConvBlock(256, 784), 
         SeparableConvBlock(784, 512), 

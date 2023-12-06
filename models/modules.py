@@ -140,17 +140,16 @@ class XceptionBlock(nn.Module):
 #___________________________________________________________________________________________________________________
 
 class ResidualBlock(nn.Module):
-  def __init__(self, in_channels , n = 3):
+  def __init__(self, in_channels):
     super(ResidualBlock, self).__init__()
     # n : no. of seperable conv blocks in a residual block
     
-    self.n = n 
     self.in_channels  = in_channels
     self.model = self.get_model()
 
   def get_model(self):
-    self.sep_conv_blocks = [SeparableConvBlock(in_channel = self.in_channels , out_channels = self.in_channels) for i in range(self.n)]
-    return  nn.Sequential(*self.sep_conv_blocks)
+
+    return   SeparableConvBlock(in_channel = self.in_channels , out_channels = self.in_channels) 
 
   def forward(self, x):
     return x + self.model(x)    # side branch + main branch
