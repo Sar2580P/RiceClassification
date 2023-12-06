@@ -112,7 +112,7 @@ class HSIModel(nn.Module):
         XceptionBlock(self.squeeze_channels, 512), 
         XceptionBlock(512, 512), 
         XceptionBlock(512, 256),
-        ResidualBlock(256, 12),
+        ResidualBlock(256, 1000),
         # XceptionBlock(128, 256), 
         SeparableConvBlock(256, 784), 
         SeparableConvBlock(784, 512), 
