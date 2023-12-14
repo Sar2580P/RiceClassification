@@ -7,3 +7,6 @@ lr : 0.00001
 weight_decay : 0.0001
 ckpt_file_name : 'gnet--{epoch}-{val_loss:.2f}-{val_accuracy:.2f}'
 model_name : 'rgb_google_net'
+C : 3
+H : 247
+W : 120
