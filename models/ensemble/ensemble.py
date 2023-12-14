@@ -52,8 +52,8 @@ class Ensemble(nn.Module):
     self.config = config
 
     self.model = nn.Sequential(
-                    Dense(drop = 0.25 , in_size = 1408, out_size = 1024, ), 
-                    Dense(drop = 0.15 , in_size = 1024, out_size = 256, ), 
+                    # Dense(drop = 0.25 , in_size = 640, out_size = 1024, ), 
+                    Dense(drop = 0.15 , in_size = 640, out_size = 256, ), 
                     Dense(drop = 0 , in_size = 256, out_size = self.config['num_classes']),
                     )
 

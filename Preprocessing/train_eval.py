@@ -85,11 +85,12 @@ class Classifier(pl.LightningModule):
 #___________________________________________________________________________________________________________________
 class MyDataset(Dataset):
   # defining values in the constructor
-  def __init__(self , df,transforms_):
+  def __init__(self , df, transforms_ = None ):
     self.df = df
     self.Y = torch.tensor( self.df.iloc[:, -1].values, dtype=torch.float32)
     self.shape = self.df.shape
     self.transforms_ = transforms_
+    print('transforms_ : ', transforms_ )
     
   # Getting the data samples
   def __getitem__(self, idx):
@@ -102,8 +103,8 @@ class MyDataset(Dataset):
       img_tensor = np.load(img_path)
       img_tensor = self.__msc_correction__(img_tensor)
       # img_tensor = self.__snv__(img_tensor)
-    
-    img_tensor = self.transforms_(img_tensor)
+    if self.transforms_ is not None:
+      img_tensor = self.transforms_(img_tensor)
     return img_tensor, y
   
   def __msc_correction__(self, hsi_image):

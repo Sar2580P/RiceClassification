@@ -11,9 +11,10 @@ class Dense(nn.Module):
       self.model = self.get_model()
     def get_model(self):
       return nn.Sequential(
-          nn.Dropout(self.drop), 
+          
           nn.Linear(self.in_size, self.out_size) , 
-          nn.PReLU()
+          nn.PReLU(),
+          nn.Dropout(self.drop), 
       )
     def forward(self, x):
       return self.model(x)
@@ -153,6 +154,14 @@ class ResidualBlock(nn.Module):
 
   def forward(self, x):
     return x + self.model(x)    # side branch + main branch
+  
+# class CombinedResidual(nn.Module):
+#   def __init__(self, in_channels, n):
+#     super(CombinedResidual, self).__init__()
+#     # n : no. of seperable conv blocks in a residual block
+#     self.n = n
+#     self.in_channels  = in_channels
+#     self.model = self.get_model()
 #___________________________________________________________________________________________________________________
 # model = ResidualBlock(256)
 # import torch
