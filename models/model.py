@@ -1,8 +1,16 @@
-from sympy import E
 import torchvision
 import torch.nn as nn 
 from modules import *
 import torch
+from torchview import draw_graph
+
+def plot_model( config , model):
+  model_graph = draw_graph(model, input_size=(config['BATCH_SIZE'] , config['C'] , config['H'] , config['W']), graph_dir ='TB', expand_nested=True,
+                            graph_name=config['model_name'],save_graph=True,filename=config['model_name'], 
+                            directory=config['dir'])
+  model_graph.visual_graph
+
+#___________________________________________________________________________________________________________________
 
 class Resnet():
   # https://pytorch.org/vision/main/models/generated/torchvision.models.resnet101.html
@@ -20,14 +28,14 @@ class Resnet():
     # print(self.base_model)
 
     self.head = nn.Sequential(
-                Dense(0.2 , 2048 ,1024), 
-                Dense(0.14 ,1024, 256), 
+                FC(0.2 , 2048 ,1024), 
+                FC(0.14 ,1024, 256), 
                         )
     return nn.Sequential(
                 self.base_model ,
                 nn.Flatten(), 
                 self.head ,
-                Dense(0, 256, self.config['num_classes']) ,
+                FC(0, 256, self.config['num_classes']) ,
                         )
     
   def forward(self, x):
@@ -45,7 +53,7 @@ class EffecientNet():
   def get_model(self): 
     self.head = nn.Sequential(
                 nn.Flatten(1) ,
-                Dense(0.2 , 1280 ,512),   
+                FC(0.2 , 1280 ,512),   
               )
 
     self.enet = torchvision.models.efficientnet_v2_l( weights='DEFAULT' , progress = True)    # 'DEFAULT'  : 'IMAGENET1K_V1'
@@ -54,7 +62,7 @@ class EffecientNet():
     return nn.Sequential(
                   self.base_model ,
                   self.head, 
-                  Dense(0, 512, self.config['num_classes'])
+                  FC(0, 512, self.config['num_classes'])
                         )   
     
   def forward(self, x):
@@ -69,11 +77,11 @@ class GoogleNet():
 
     self.model = self.get_model()
     self.layer_lr = [{'params' : self.base_model.parameters()},{'params': self.head.parameters(), 'lr': self.config['lr'] * 100}]
-
+    plot_model(self.config , self.model)
   def get_model(self): 
     self.head = nn.Sequential(
                 nn.Flatten(1) ,
-                Dense(0.2 , 1024 ,512), 
+                FC(0.2 , 1024 ,512), 
                 
     )
     self.gnet = torchvision.models.googlenet( weights='DEFAULT' , progress = True)    # 'DEFAULT'  : 'IMAGENET1K_V1'
@@ -81,7 +89,7 @@ class GoogleNet():
     return nn.Sequential(
                   self.base_model ,
                   self.head, 
-                  Dense(0, 512, self.config['num_classes'])
+                  FC(0, 512, self.config['num_classes'])
                         )   
     
   def forward(self, x):
@@ -103,8 +111,8 @@ class HSIModel(nn.Module):
   def get_model(self):
     self.head = nn.Sequential(
                   nn.Flatten(1) ,
-                  Dense(0.2 , 512, 256), 
-                  Dense(0.15, 256, 128), 
+                  FC(0.2 , 512, 256), 
+                  FC(0.15, 256, 128), 
     )
     li = [ResidualBlock(256) for i in range(self.n_res_blocks)]
     self.base_model = nn.Sequential(
@@ -123,7 +131,7 @@ class HSIModel(nn.Module):
     return nn.Sequential(
                   self.base_model,
                   self.head, 
-                  Dense(0, 128, self.config['num_classes']),
+                  FC(0, 128, self.config['num_classes']),
                         )
     
   def forward(self, x):
@@ -131,27 +139,65 @@ class HSIModel(nn.Module):
     return self.model(x)
 #___________________________________________________________________________________________________________________
 
-# model = HSIModel({'lr': 0.001, 'num_classes': 107, 'in_channels': 168})
-# print(model.base_model)
-# write to txt file
-# with open('models/hsi/model.txt', 'w') as f:
-#     print(model, file=f)
+class DenseNet(nn.Module):
+    def __init__(self,densenet_variant,in_channels,num_classes, compression_factor, k , config):
+
+        super(DenseNet,self).__init__()
+
+        self.densenet_variant = densenet_variant
+        self.in_channels = in_channels
+        self.num_classes = num_classes
+        self.compression_factor = compression_factor
+        self.k = k
+        self.model = self.get_model()
+        self.config = config
+
+    def get_model(self):
+        seq_1 =  nn.Sequential(
+        # 7x7 conv with s=2 and maxpool
+                          nn.Conv2d(in_channels=self.in_channels ,out_channels=64 ,kernel_size=7 ,stride=2 ,padding=3 ,bias = False) ,
+                          nn.BatchNorm2d(num_features=64) , 
+                          nn.ReLU() ,
+                          nn.MaxPool2d(kernel_size=2, stride=2) ,
+                    )
+        #----------------------------------------------------------------------------------------------------------------------------
+        # adding 3 DenseBlocks and 3 Transition Layers 
+        self.deep_nn = nn.ModuleList()
+        dense_block_inchannels = 64
+
+        for num in range(len(self.densenet_variant))[:-1]:
+
+            self.deep_nn.add_module( f"DenseBlock_{num+1}" , DenseBlock( self.densenet_variant[num] , dense_block_inchannels ) )
+            dense_block_inchannels  = int(dense_block_inchannels + self.k * self.densenet_variant[num])
+
+            self.deep_nn.add_module( f"TransitionLayer_{num+1}" , TransitionLayer( dense_block_inchannels, self.compression_factor ) )
+            dense_block_inchannels = int(dense_block_inchannels * self.compression_factor)
+
+        # adding the 4th and final DenseBlock
+        self.deep_nn.add_module( f"DenseBlock_{num+2}" , DenseBlock( self.densenet_variant[-1] , dense_block_inchannels ) )
+        dense_block_inchannels  = int(dense_block_inchannels + self.k * self.densenet_variant[-1])
+        #----------------------------------------------------------------------------------------------------------------------------
+        seq_2 = nn.Sequential(
+                          *self.deep_nn , 
+                          nn.BatchNorm2d(num_features=dense_block_inchannels) ,
+                          nn.ReLU() ,
+                          # Average Pool
+                          nn.AdaptiveAvgPool2d(1), 
+                          nn.Flatten(1) ,
+                          # fully connected layer
+                          nn.Linear(dense_block_inchannels, self.num_classes)
+                )
+        
+        return nn.Sequential(
+                  seq_1,
+                  seq_2
+                        ) 
+
+
+    def forward(self,x):
+        """
+        deep_nn is the module_list container which has all the dense blocks and transition blocks
+        """
+        return self.model(x)
     
-# model = EffecientNet({'lr': 0.001, 'num_classes': 107})
-# print(model.base_model)
-# x = torch.randn(32,168, 126, 240)
-# y = model.forward(x)
 
-# m = nn.AdaptiveAvgPool2d(1)
-# input = torch.randn(32, 64, 8, 9)
-# output = m(input)
-# print(output.shape)
-
-# model = GoogleNet({'lr': 0.001, 'num_classes': 107})
-# print(model.base_model)
-# x = torch.randn(32,3, 126, 240)
-# y = model.forward(x)
-# print(y.shape)
-
-# model = Resnet({'lr': 0.001, 'num_classes': 107})
-# print(model.base_model)
