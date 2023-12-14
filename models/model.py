@@ -84,8 +84,12 @@ class GoogleNet():
                 FC(0.2 , 1024 ,512), 
                 
     )
-    self.gnet = torchvision.models.googlenet( weights='DEFAULT' , progress = True)    # 'DEFAULT'  : 'IMAGENET1K_V1'
+    self.gnet = torchvision.models.googlenet( weights='DEFAULT', progress = True)    # 'DEFAULT'  : 'IMAGENET1K_V1'
+    # for param in self.gnet.parameters():
+    #   param.requires_grad = False
+    print('Hare Krishna', self.gnet.parameters(), '\n\n\n\n\n\n\n')
     self.base_model = nn.Sequential(*list(self.gnet.children())[:-2])
+    print(self.base_model)
     return nn.Sequential(
                   self.base_model ,
                   self.head, 
@@ -93,17 +97,19 @@ class GoogleNet():
                         )   
     
   def forward(self, x):
-    return self.model(x)  
+    x =  self.model(x) 
+    # print(x.shape)
+    return x 
   
 #___________________________________________________________________________________________________________________
 
 class HSIModel(nn.Module):
-  def __init__(self , config, n_res_blocks = 8):
+  def __init__(self , config, n_res_blocks = 12):
     super(HSIModel, self).__init__()
     self.config = config
     self.in_channels = self.config['in_channels']
     self.n_res_blocks = n_res_blocks
-    self.squeeze_channels = self.config['in_channels']
+    self.squeeze_channels = 512
     self.model = self.get_model()
     self.layer_lr = [{'params' : self.base_model.parameters()},{'params': self.head.parameters(), 'lr': self.config['lr'] * 1}]
 
@@ -116,16 +122,21 @@ class HSIModel(nn.Module):
     )
     li = [ResidualBlock(256) for i in range(self.n_res_blocks)]
     self.base_model = nn.Sequential(
-        BandAttentionBlock(self.in_channels), 
-        # SqueezeBlock(self.in_channels, self.squeeze_channels),
-        XceptionBlock(self.squeeze_channels, 512), 
-        XceptionBlock(512, 512), 
-        XceptionBlock(512, 256),
-        **li, 
+        # BandAttentionBlock(self.in_channels), 
+        SqueezeBlock(self.in_channels, 100),
+        SqueezeBlock(100, 512),
+        nn.Dropout(p=0.2) ,
+        XceptionBlock(512, 256), 
+        XceptionBlock(256, 256), 
+        nn.Dropout(p=0.2) ,
+        # XceptionBlock(256, 128),
+        nn.Sequential(*li), 
         # XceptionBlock(128, 256), 
-        SeparableConvBlock(256, 784), 
-        SeparableConvBlock(784, 512), 
+        # SeparableConvBlock(128, 256), 
+        
+        SeparableConvBlock(256,512), 
         nn.MaxPool2d(kernel_size = (3,3) ,stride = (2,2)) , 
+        nn.Dropout(p=0.15) ,
         nn.AdaptiveAvgPool2d((1,1)) ,
     )
     return nn.Sequential(
