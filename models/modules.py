@@ -23,7 +23,7 @@ class Composite(nn.Module):
     self.in_channels , self.out_channels = in_channels , out_channels
     self.kernel_size , self.padding , self.stride = kernel_size , padding , stride
     self.model = self.get_model()
-
+    
   def get_model(self):
     return nn.Sequential(
         nn.BatchNorm2d(self.in_channels ),  
@@ -33,7 +33,6 @@ class Composite(nn.Module):
     )
   def forward(self, x):
     return self.model(x)
-  
 #___________________________________________________________________________________________________________________
 
 class BandAttentionBlock(nn.Module):
@@ -164,14 +163,14 @@ class BottleNeck(nn.Module):
   
   def get_model(self):
     return nn.Sequential(
-        Composite(in_channels = self.in_channels ,kernel = (1,1) , out_channels = 4*self.k, padding=0) ,
-        Composite(in_channels = 4*self.k ,kernel = (3,3) , out_channels = self.k ,padding = 1) ,
+        Composite(in_channels = self.in_channels ,kernel_size = (1,1) , out_channels = 4*self.k, padding=0) ,
+        Composite(in_channels = 4*self.k ,kernel_size = (3,3) , out_channels = self.k ,padding = 1) ,
     )
   
   def forward(self, x):
-
+    # print('inside bottleneck layer' , 'in : ',  x.shape)
     x = torch.cat([x, self.model(x)] , 1)
-
+    # print('outsie BottleNeck : ' , x.shape)
     return x
   
 #___________________________________________________________________________________________________________________
@@ -201,8 +200,10 @@ class DenseBlock(nn.Module):
 
 
     def forward(self,x):
-   
-      return self.model(x)
+      # print('inside dense block' , '     in : ',  x.shape , self.in_channels , 'layer_num --->'  , self.layer_num)
+      y =  self.model(x)
+      # print('outside DenseBlock : ' ,y.shape , '<--------')
+      return y
 #___________________________________________________________________________________________________________________
 
 class TransitionLayer(nn.Module):
@@ -222,14 +223,16 @@ class TransitionLayer(nn.Module):
         self.model = self.get_model()
 
     def get_model(self):
-
         return nn.Sequential(nn.BatchNorm2d(self.in_channels) ,
                             nn.Conv2d(in_channels = self.in_channels , out_channels = int(self.in_channels * self.compression_factor) ,
                                       kernel_size = 1 ,stride = 1 ,padding = 0, bias=False ) , 
                             nn.AvgPool2d(kernel_size = 2, stride = 2)
         )
+        
 
     def forward(self,x):
+      # print('inside transition layer' , '    in : ',  x.shape)
+      # print('outside Transition : ' ,x.shape)
         return self.model(x)
 
 

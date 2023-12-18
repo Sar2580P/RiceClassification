@@ -87,7 +87,6 @@ class GoogleNet():
     self.gnet = torchvision.models.googlenet( weights='DEFAULT', progress = True)    # 'DEFAULT'  : 'IMAGENET1K_V1'
     # for param in self.gnet.parameters():
     #   param.requires_grad = False
-    print('Hare Krishna', self.gnet.parameters(), '\n\n\n\n\n\n\n')
     self.base_model = nn.Sequential(*list(self.gnet.children())[:-2])
     print(self.base_model)
     return nn.Sequential(
@@ -162,7 +161,11 @@ class DenseNet(nn.Module):
         self.k = k
         self.model = self.get_model()
         self.config = config
-
+        self.layer_lr = [{'params' : self.model.parameters() , 'lr' : self.config['lr'] * 1}]
+        plot_model(self.config , self.model)
+                
+                          
+                          
     def get_model(self):
         seq_1 =  nn.Sequential(
         # 7x7 conv with s=2 and maxpool
@@ -174,41 +177,42 @@ class DenseNet(nn.Module):
         #----------------------------------------------------------------------------------------------------------------------------
         # adding 3 DenseBlocks and 3 Transition Layers 
         self.deep_nn = nn.ModuleList()
-        dense_block_inchannels = 64
-
+        dense_block_inchannels = self.in_channels
+        
         for num in range(len(self.densenet_variant))[:-1]:
 
-            self.deep_nn.add_module( f"DenseBlock_{num+1}" , DenseBlock( self.densenet_variant[num] , dense_block_inchannels ) )
+            self.deep_nn.add_module( f"DenseBlock_{num+1}" , DenseBlock( self.densenet_variant[num] , dense_block_inchannels ,  k = self.k)  )
             dense_block_inchannels  = int(dense_block_inchannels + self.k * self.densenet_variant[num])
-
+            
             self.deep_nn.add_module( f"TransitionLayer_{num+1}" , TransitionLayer( dense_block_inchannels, self.compression_factor ) )
             dense_block_inchannels = int(dense_block_inchannels * self.compression_factor)
-
+            
         # adding the 4th and final DenseBlock
-        self.deep_nn.add_module( f"DenseBlock_{num+2}" , DenseBlock( self.densenet_variant[-1] , dense_block_inchannels ) )
-        dense_block_inchannels  = int(dense_block_inchannels + self.k * self.densenet_variant[-1])
+        self.deep_nn.add_module( f"DenseBlock_{num+2}" , DenseBlock( self.densenet_variant[-1] , dense_block_inchannels  , k = self.k) )
+        self.dense_block_inchannels  = int(dense_block_inchannels + self.k * self.densenet_variant[-1])
         #----------------------------------------------------------------------------------------------------------------------------
+
         seq_2 = nn.Sequential(
                           *self.deep_nn , 
-                          nn.BatchNorm2d(num_features=dense_block_inchannels) ,
+                          nn.BatchNorm2d(num_features=self.dense_block_inchannels)  ,
                           nn.ReLU() ,
                           # Average Pool
                           nn.AdaptiveAvgPool2d(1), 
                           nn.Flatten(1) ,
                           # fully connected layer
-                          nn.Linear(dense_block_inchannels, self.num_classes)
+                          nn.Linear(self.dense_block_inchannels, self.num_classes)
                 )
         
         return nn.Sequential(
-                  seq_1,
+                  # seq_1,
                   seq_2
-                        ) 
-
+                        )
 
     def forward(self,x):
         """
         deep_nn is the module_list container which has all the dense blocks and transition blocks
         """
+       
         return self.model(x)
-    
-
+            
+       
