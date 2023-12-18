@@ -194,7 +194,7 @@ class DenseNet(nn.Module):
 
         seq_2 = nn.Sequential(
                           *self.deep_nn , 
-                          nn.BatchNorm2d(num_features=self.dense_block_inchannels)  ,
+                          # nn.BatchNorm2/d(num_features=self.dense_block_inchannels)  ,
                           nn.ReLU() ,
                           # Average Pool
                           nn.AdaptiveAvgPool2d(1), 
