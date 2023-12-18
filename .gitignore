@@ -36,3 +36,4 @@ models/ensemble/logs/ckpts
 models/hsi/hsi_distribution.csv
 models/ensemble/__pycache__
 models/hsi/hsi_distribution.csv
+models/hsi/dense_net/ckpts
