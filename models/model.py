@@ -7,7 +7,7 @@ from torchview import draw_graph
 def plot_model( config , model):
   model_graph = draw_graph(model, input_size=(config['BATCH_SIZE'] , config['C'] , config['H'] , config['W']), graph_dir ='TB', expand_nested=True,
                             graph_name=config['model_name'],save_graph=True,filename=config['model_name'], 
-                            directory=config['dir'])
+                            directory=config['dir'], depth = 7)
   model_graph.visual_graph
 
 #___________________________________________________________________________________________________________________
