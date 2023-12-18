@@ -15,17 +15,18 @@ config = load_config(config_path)
 torch.set_float32_matmul_precision('high')
 
 model_parameters={}
+model_parameters['densenet_mini'] = [12, 18 ,6 , 6]
 model_parameters['densenet121'] = [6,12,24,16]
 model_parameters['densenet169'] = [6,12,32,32]
 model_parameters['densenet201'] = [6,12,48,32]
 model_parameters['densenet264'] = [6,12,64,48]
 
-model_obj = DenseNet(densenet_variant = model_parameters['densenet121'] , in_channels=152, num_classes=96 , compression_factor=0.3 , k = 32 , config=config)
+model_obj = DenseNet(densenet_variant = model_parameters['densenet_mini'] , in_channels=152, num_classes=96 , compression_factor=0.3 , k = 32 , config=config)
 
-# hsi_ckpt = os.path.join('models/hsi/xception/ckpts' , os.listdir('models/hsi/xception/ckpts')[-1])
-# model = Classifier.load_from_checkpoint(hsi_ckpt, model_obj=model_obj)
+hsi_ckpt = os.path.join('models/hsi/xception/ckpts' , os.listdir('models/hsi/xception/ckpts')[-1])
+model = Classifier.load_from_checkpoint(hsi_ckpt, model_obj=model_obj)
 
-#___________________________________________________________________________________________________________________
+___________________________________________________________________________________________________________________
 num_workers = 8
 tr_loader = DataLoader(tr_dataset, batch_size=config['BATCH_SIZE'], shuffle=True, num_workers=num_workers)
 val_loader = DataLoader(val_dataset, batch_size=config['BATCH_SIZE'], shuffle=False, num_workers=num_workers)

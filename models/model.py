@@ -215,4 +215,3 @@ class DenseNet(nn.Module):
        
         return self.model(x)
             
-       
