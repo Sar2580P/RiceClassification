@@ -1,4 +1,6 @@
-import sys
+import sys, argparse
+
+from pyparsing import col
 sys.path.append('Preprocessing')
 sys.path.append('models')
 from utils import *
@@ -9,98 +11,77 @@ from data_loading import *
 from pytorch_lightning import Trainer
 from pytorch_lightning.loggers import WandbLogger, CSVLogger
 import os 
+from dynamic_weighting import *
 #_______________________________________________________________________________________________________________________
 
-# hsi_obj = HSIModel(load_config('models/hsi/xception/config.yaml'))
-# resnet_obj = Resnet(load_config('models/rgb/resnet/config.yaml'))
-# enet_obj = EffecientNet(load_config('models/rgb/enet/config.yaml'))
 denseNet_obj = DenseNet(densenet_variant = [12, 18 ,24 , 12] , in_channels=152, num_classes=96 , 
                         compression_factor=0.3 , k = 32 , config=load_config('models/hsi/dense_net/config.yaml'))
 gnet_obj = GoogleNet(load_config('models/rgb/google_net/config.yaml'))
 
 
 hsi_ckpt = os.path.join('models/hsi/dense_net/ckpts' , os.listdir('models/hsi/dense_net/ckpts')[-1])
-# resnet_ckpt = os.path.join('models/rgb/resnet/ckpts', os.listdir('models/rgb/resnet/ckpts')[-1])
-# enet_ckpt = os.path.join('models/rgb/enet/ckpts/' , os.listdir('models/rgb/enet/ckpts')[-1])
 rgb_ckpt = os.path.join('models/rgb/google_net/ckpts' , os.listdir('models/rgb/google_net/ckpts')[-1])
 
 hsi_classifier = Classifier.load_from_checkpoint(hsi_ckpt, model_obj=denseNet_obj)
-# resnet_classifier = Classifier.load_from_checkpoint(resnet_ckpt, model_obj=resnet_obj)
-# enet_classifier = Classifier.load_from_checkpoint(enet_ckpt, model_obj=enet_obj)
 rgb_classifier = Classifier.load_from_checkpoint(rgb_ckpt, model_obj=gnet_obj)
 
 
-hsi_pretrained = nn.Sequential(*list(hsi_classifier.model.children())[0][:-1])
-# resnet_pretrained = nn.Sequential(*list(resnet_classifier.model.children())[:-1])
-# enet_pretrained = nn.Sequential(*list(enet_classifier.model.children())[:-1])
-rgb_pretrained = nn.Sequential(*list(rgb_classifier.model.children())[:-1])
+# hsi_pretrained = nn.Sequential(*list(hsi_classifier.model.children())[0][:-1])
+# rgb_pretrained = nn.Sequential(*list(rgb_classifier.model.children())[:-1])
 
-# print(rgb_pretrained)
-# print('\n\n\n\n\n\n\n\n\n\n')
-# print(hsi_pretrained)
 #_______________________________________________________________________________________________________________________
-for param in hsi_pretrained.parameters():
+for param in hsi_classifier.parameters():
   param.requires_grad = False
+
+for param in rgb_classifier.parameters():
+  param.requires_grad = False
+
+#_______________________________________________________________________________________________________________________
+def get_prediction(data_df ,classifier, classifier_name, input_type,  transforms_):
+  labels = data_df.iloc[: ,1]
+  df = pd.DataFrame(columns = [str(i) for i in range(96)])
   
-# for param in resnet_pretrained.parameters():
-#   param.requires_grad = False
+  for img_path in data_df.iloc[:,0]:
+      img = None
+      if input_type == 'hsi':
+        img = np.load(img_path)
 
-# for param in enet_pretrained.parameters():
-#   param.requires_grad = False
+      else :
+         img = cv2.imread(img_path)
 
-for param in rgb_pretrained.parameters():
-  param.requires_grad = False
+      img = transforms_(img)
+      print(img.shape)
+      output = torch.softmax(classifier(img))
+      output = output.detach().cpu().numpy()
+      df.loc[len(df)] = output
 
-#_______________________________________________________________________________________________________________________
-class Ensemble(nn.Module):
-  def __init__(self , config):
-    super(Ensemble, self).__init__()
-    self.config = config
+  # df['labels'] = labels
+   
+  # df.to_csv('models\ensemble\Classifier_Prediction_Data', classifier_name + '.csv' , index = False)
+  return df, labels
 
-    self.model = nn.Sequential(
-                    # Dense(drop = 0.25 , in_size = 640, out_size = 1024, ), 
-                    FC(drop = 0.3 , in_size = 1192, out_size = 512, ), 
-                    FC(drop = 0.2 , in_size = 512, out_size = 256, ), 
-                    FC(drop = 0 , in_size = 256, out_size = self.config['num_classes']),
-                    )
+p1, labels = get_prediction(df_tst ,hsi_classifier, 'denseNet_hsi_classifier', 'hsi',transforms.ToTensor())
+p2, _ = get_prediction(df_tst ,rgb_classifier, 'googleNet_rgb_classifier', 'rgb',transforms.ToTensor())
+parser = argparse.ArgumentParser()
+args = parser.parse_args()
 
-    self.layer_lr = self.model.parameters() 
-                     
+parser.add_argument('--topk', type=int, default = 2, help='Top-k number of classes')
 
-  def forward(self, x):
-    x_hsi , x_rgb = x[0] , x[1]
-    hsi_out = hsi_pretrained(x_hsi)   # out : 680
-    # resnet_out = resnet_pretrained(x_rgb)
-    # enet_out = enet_pretrained(x_rgb)
-    rgb_out =  rgb_pretrained(x_rgb)    # out : 512
-    out = self.model(torch.cat((hsi_out, rgb_out), dim=1))
-    # print('Radhe radhe' , out.shape)
+top = args.topk #top 'k' classes
+predictions = Gompertz(top, p1, p2)
 
-    return out
+correct = np.where(predictions == labels)[0].shape[0]
+total = labels.shape[0]
 
-config = load_config('models/ensemble/config.yaml')
-model_obj = Ensemble(config)
-torch.set_float32_matmul_precision('high')
-#_______________________________________________________________________________________________________________________
+print("Accuracy = ",correct/total)
+classes = []
+for i in range(p1.shape[1]):
+    classes.append(str(i+1))
+    
+metrics(labels,predictions,classes)
 
-num_workers = 8
-tr_loader = DataLoader(tr_dataset, batch_size=config['BATCH_SIZE'], shuffle=True, num_workers=num_workers)
-val_loader = DataLoader(val_dataset, batch_size=config['BATCH_SIZE'], shuffle=False, num_workers=num_workers)
-tst_loader = DataLoader(tst_dataset, batch_size=config['BATCH_SIZE'], shuffle=False, num_workers=num_workers)
+plot_roc(labels,predictions)
 #_______________________________________________________________________________________________________________________
 
-model = Classifier(model_obj= model_obj)
 
-checkpoint_callback.dirpath = os.path.join(config['dir'], 'ckpts')
-checkpoint_callback.filename = config['ckpt_file_name']
 
-run_name = f"lr_{config['lr']} *** bs{config['BATCH_SIZE']} *** decay_{config['weight_decay']}"
-wandb_logger = WandbLogger(project=config['model_name'], name = run_name)
-csv_logger = CSVLogger(config['dir'], name=config['model_name']+'_logs')
-
-#_______________________________________________________________________________________________________________________
-trainer = Trainer(callbacks=[early_stop_callback, checkpoint_callback, rich_progress_bar, rich_model_summary], 
-                  accelerator = 'gpu' ,max_epochs=200, logger=[wandb_logger,csv_logger])  
- 
-trainer.fit(model, tr_loader, val_loader)
-trainer.test(model, tst_loader)
