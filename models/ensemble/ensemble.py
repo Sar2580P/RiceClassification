@@ -11,18 +11,20 @@ from pytorch_lightning.loggers import WandbLogger, CSVLogger
 import os 
 #_______________________________________________________________________________________________________________________
 
-hsi_obj = HSIModel(load_config('models/hsi/xception/config.yaml'))
-resnet_obj = Resnet(load_config('models/rgb/resnet/config.yaml'))
-enet_obj = EffecientNet(load_config('models/rgb/enet/config.yaml'))
+# hsi_obj = HSIModel(load_config('models/hsi/xception/config.yaml'))
+# resnet_obj = Resnet(load_config('models/rgb/resnet/config.yaml'))
+# enet_obj = EffecientNet(load_config('models/rgb/enet/config.yaml'))
+denseNet_obj = DenseNet(densenet_variant = [12, 18 ,24 , 12] , in_channels=152, num_classes=96 , 
+                        compression_factor=0.3 , k = 32 , config=load_config('models/hsi/dense_net/config.yaml'))
 gnet_obj = GoogleNet(load_config('models/rgb/google_net/config.yaml'))
 
 
-hsi_ckpt = os.path.join('models/hsi/dense_net/ckpts' , os.listdir('models/hsi/xception/ckpts')[-1])
+hsi_ckpt = os.path.join('models/hsi/dense_net/ckpts' , os.listdir('models/hsi/dense_net/ckpts')[-1])
 # resnet_ckpt = os.path.join('models/rgb/resnet/ckpts', os.listdir('models/rgb/resnet/ckpts')[-1])
 # enet_ckpt = os.path.join('models/rgb/enet/ckpts/' , os.listdir('models/rgb/enet/ckpts')[-1])
 rgb_ckpt = os.path.join('models/rgb/google_net/ckpts' , os.listdir('models/rgb/google_net/ckpts')[-1])
 
-hsi_classifier = Classifier.load_from_checkpoint(hsi_ckpt, model_obj=hsi_obj)
+hsi_classifier = Classifier.load_from_checkpoint(hsi_ckpt, model_obj=denseNet_obj)
 # resnet_classifier = Classifier.load_from_checkpoint(resnet_ckpt, model_obj=resnet_obj)
 # enet_classifier = Classifier.load_from_checkpoint(enet_ckpt, model_obj=enet_obj)
 rgb_classifier = Classifier.load_from_checkpoint(rgb_ckpt, model_obj=gnet_obj)
