@@ -11,31 +11,33 @@ from pytorch_lightning.loggers import WandbLogger, CSVLogger
 import os 
 #_______________________________________________________________________________________________________________________
 
-hsi_obj = HSIModel(load_config('models/hsi/xception/config.yaml'))
-resnet_obj = Resnet(load_config('models/rgb/resnet/config.yaml'))
-enet_obj = EffecientNet(load_config('models/rgb/enet/config.yaml'))
+# hsi_obj = HSIModel(load_config('models/hsi/xception/config.yaml'))
+# resnet_obj = Resnet(load_config('models/rgb/resnet/config.yaml'))
+# enet_obj = EffecientNet(load_config('models/rgb/enet/config.yaml'))
+denseNet_obj = DenseNet(densenet_variant = [12, 18 ,24 , 12] , in_channels=152, num_classes=96 , 
+                        compression_factor=0.3 , k = 32 , config=load_config('models/hsi/dense_net/config.yaml'))
 gnet_obj = GoogleNet(load_config('models/rgb/google_net/config.yaml'))
 
 
-hsi_ckpt = os.path.join('models/hsi/dense_net/ckpts' , os.listdir('models/hsi/xception/ckpts')[-1])
+hsi_ckpt = os.path.join('models/hsi/dense_net/ckpts' , os.listdir('models/hsi/dense_net/ckpts')[-1])
 # resnet_ckpt = os.path.join('models/rgb/resnet/ckpts', os.listdir('models/rgb/resnet/ckpts')[-1])
 # enet_ckpt = os.path.join('models/rgb/enet/ckpts/' , os.listdir('models/rgb/enet/ckpts')[-1])
 rgb_ckpt = os.path.join('models/rgb/google_net/ckpts' , os.listdir('models/rgb/google_net/ckpts')[-1])
 
-hsi_classifier = Classifier.load_from_checkpoint(hsi_ckpt, model_obj=hsi_obj)
+hsi_classifier = Classifier.load_from_checkpoint(hsi_ckpt, model_obj=denseNet_obj)
 # resnet_classifier = Classifier.load_from_checkpoint(resnet_ckpt, model_obj=resnet_obj)
 # enet_classifier = Classifier.load_from_checkpoint(enet_ckpt, model_obj=enet_obj)
 rgb_classifier = Classifier.load_from_checkpoint(rgb_ckpt, model_obj=gnet_obj)
 
 
-hsi_pretrained = nn.Sequential(*list(hsi_classifier.model.children())[:-1])
+hsi_pretrained = nn.Sequential(*list(hsi_classifier.model.children())[0][:-1])
 # resnet_pretrained = nn.Sequential(*list(resnet_classifier.model.children())[:-1])
 # enet_pretrained = nn.Sequential(*list(enet_classifier.model.children())[:-1])
 rgb_pretrained = nn.Sequential(*list(rgb_classifier.model.children())[:-1])
 
-print(rgb_pretrained)
-print('\n\n\n\n\n\n\n\n\n\n')
-print(hsi_pretrained)
+# print(rgb_pretrained)
+# print('\n\n\n\n\n\n\n\n\n\n')
+# print(hsi_pretrained)
 #_______________________________________________________________________________________________________________________
 for param in hsi_pretrained.parameters():
   param.requires_grad = False
@@ -57,7 +59,8 @@ class Ensemble(nn.Module):
 
     self.model = nn.Sequential(
                     # Dense(drop = 0.25 , in_size = 640, out_size = 1024, ), 
-                    FC(drop = 0.15 , in_size = 640, out_size = 256, ), 
+                    FC(drop = 0.3 , in_size = 1192, out_size = 512, ), 
+                    FC(drop = 0.2 , in_size = 512, out_size = 256, ), 
                     FC(drop = 0 , in_size = 256, out_size = self.config['num_classes']),
                     )
 
@@ -66,12 +69,12 @@ class Ensemble(nn.Module):
 
   def forward(self, x):
     x_hsi , x_rgb = x[0] , x[1]
-    hsi_out = hsi_pretrained(x_hsi)
+    hsi_out = hsi_pretrained(x_hsi)   # out : 680
     # resnet_out = resnet_pretrained(x_rgb)
     # enet_out = enet_pretrained(x_rgb)
-    rgb_out =  rgb_pretrained(x_rgb)
+    rgb_out =  rgb_pretrained(x_rgb)    # out : 512
     out = self.model(torch.cat((hsi_out, rgb_out), dim=1))
-    print('Radhe radhe' , out.shape)
+    # print('Radhe radhe' , out.shape)
 
     return out
 
