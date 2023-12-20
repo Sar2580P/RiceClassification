@@ -11,6 +11,37 @@ def plot_model( config , model):
   model_graph.visual_graph
 
 #___________________________________________________________________________________________________________________
+class MobileNet():
+  # https://pytorch.org/vision/main/models/generated/torchvision.models.resnet101.html
+  def __init__(self, config ):
+    self.config = config
+    self.model = self.get_model()
+    print(self.model)
+    self.layer_lr = [{'params' : self.base_model.parameters()},{'params': self.head.parameters(), 'lr': self.config['lr'] * 20}]
+    
+
+
+  def get_model(self):
+    self.mobileNet = torchvision.models.mobilenet_v3_large(weights = 'MobileNet_V3_Large_Weights.DEFAULT', progress = True)
+    
+    self.base_model = nn.Sequential(*list(self.mobileNet.children())[:-1])
+
+    self.head = nn.Sequential(
+      *list(self.mobileNet.children())[-1][:2] ,
+                FC(0.2 , 1028 ,256), 
+                # FC(0.14 ,1024, 256), 
+                        )
+    return nn.Sequential(
+                self.base_model ,
+                nn.Flatten(1), 
+                self.head ,
+                FC(0, 256, self.config['num_classes']) ,
+                        )
+    
+  def forward(self, x):
+    return self.model(x)
+  
+#___________________________________________________________________________________________________________________
 
 class Resnet():
   # https://pytorch.org/vision/main/models/generated/torchvision.models.resnet101.html
@@ -22,19 +53,18 @@ class Resnet():
 
 
   def get_model(self):
-    self.resnet = torchvision.models.resnet50(weights = 'ResNet50_Weights.DEFAULT', progress = True)
+    self.resnet = torchvision.models.resnet50(weights = 'ResNet34_Weights.DEFAULT', progress = True)
     
     self.base_model = nn.Sequential(*list(self.resnet.children())[:-1])
-    # print(self.base_model)
-
+    print(self.base_model)
     self.head = nn.Sequential(
                 FC(0.2 , 2048 ,1024), 
                 FC(0.14 ,1024, 256), 
                         )
     return nn.Sequential(
                 self.base_model ,
-                nn.Flatten(), 
-                self.head ,
+                nn.Flatten(1), 
+                # self.head ,
                 FC(0, 256, self.config['num_classes']) ,
                         )
     
@@ -215,3 +245,5 @@ class DenseNet(nn.Module):
        
         return self.model(x)
             
+
+mnet = Resnet(config={'num_classes': 96, 'lr' : 0.001})
