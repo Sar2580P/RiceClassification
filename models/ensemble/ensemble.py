@@ -29,7 +29,6 @@ rgb_classifier = Classifier.load_from_checkpoint(rgb_ckpt, model_obj=gnet_obj)
 hsi_pretrained = nn.Sequential(*list(hsi_classifier.model.children()))
 rgb_pretrained = nn.Sequential(*list(rgb_classifier.model.children()))
 df = pd.read_csv('Data/96/df_tst.csv')
-#_______________________________________________________________________________________________________________________
 for param in hsi_pretrained.parameters():
   param.requires_grad = False
 
@@ -50,7 +49,7 @@ def get_prediction(data_df ,classifier, classifier_name, input_type,  transforms
     else :
       img = cv2.imread(data_df.iloc[idx , 0])
     img = torch.unsqueeze(transforms_(img), 0)
-    output = torch.softmax(classifier(img.to(device)), 1)
+    output = classifier(img.to(device))
     output = output.detach().cpu().numpy()
     df.loc[len(df)] = output[0]
 
@@ -71,13 +70,13 @@ p1 , p2 , labels = df_hsi.iloc[: , :96] , df_rgb.iloc[: , :96] , df_hsi.iloc[: ,
 
 # parser.add_argument('--topk', type=int, default = 2, help='Top-k number of classes')
 
-top = 3#top 'k' classes
-predictions = Gompertz(top, p1, p2)
+# top = 3#top 'k' classes
+# predictions = Gompertz(top, p1, p2)
 
-correct = np.where(predictions == labels)[0].shape[0]
-total = labels.shape[0]
+# correct = np.where(predictions == labels)[0].shape[0]
+# total = labels.shape[0]
 
-print("Accuracy = ",correct/total)
+# print("Accuracy = ",correct/total)
 # classes = []
 # for i in range(p1.shape[1]):
 #     classes.append(str(i+1))
@@ -88,4 +87,13 @@ print("Accuracy = ",correct/total)
 #_______________________________________________________________________________________________________________________
 
 
+w1 = 0.1
+preds = []
 
+for i in range(len(labels)) :
+  p = (w1 * p1.iloc[i , :]) + ((1-w1) * p2.iloc[i , :])
+  output_class = np.argmax(p)
+  preds.append(output_class)
+  
+accuracy = np.sum(np.array(preds) == np.array(labels)) / len(labels)
+print(accuracy)
