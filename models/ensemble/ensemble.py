@@ -1,5 +1,5 @@
 import sys, argparse
-
+from tqdm import tqdm
 from pyparsing import col
 sys.path.append('Preprocessing')
 sys.path.append('models')
@@ -25,10 +25,11 @@ rgb_ckpt = os.path.join('models/rgb/google_net/ckpts' , os.listdir('models/rgb/g
 hsi_classifier = Classifier.load_from_checkpoint(hsi_ckpt, model_obj=denseNet_obj)
 rgb_classifier = Classifier.load_from_checkpoint(rgb_ckpt, model_obj=gnet_obj)
 
-
 hsi_pretrained = nn.Sequential(*list(hsi_classifier.model.children()))
 rgb_pretrained = nn.Sequential(*list(rgb_classifier.model.children()))
-df = pd.read_csv('Data/96/df_tst.csv')
+# df_tst = pd.read_csv('Data/96/df_tst.csv')
+df_tr = pd.read_csv('Data/96/fold_0/df_tr.csv')
+
 for param in hsi_pretrained.parameters():
   param.requires_grad = False
 
@@ -41,11 +42,10 @@ def get_prediction(data_df ,classifier, classifier_name, input_type,  transforms
   labels = data_df.iloc[: ,2]
   df = pd.DataFrame(columns = [str(i) for i in range(96)])
   
-  for idx in range(len(data_df)):
+  for idx in tqdm(range(len(data_df))):
     img = None
     if input_type == 'hsi':
       img = np.load(data_df.iloc[idx , 1])
-
     else :
       img = cv2.imread(data_df.iloc[idx , 0])
     img = torch.unsqueeze(transforms_(img), 0)
@@ -58,8 +58,8 @@ def get_prediction(data_df ,classifier, classifier_name, input_type,  transforms
   df.to_csv('models/ensemble/Classifier_Prediction_Data/'+ classifier_name + '.csv' , index = False)
   return df, labels
 
-p1, labels = get_prediction(df_tst ,hsi_pretrained, 'denseNet_hsi_classifier', 'hsi',transforms.ToTensor())
-p2, _ = get_prediction(df_tst ,rgb_pretrained, 'googleNet_rgb_classifier', 'rgb',transforms.ToTensor())
+p1, labels = get_prediction(df_tr ,hsi_pretrained, 'denseNet_hsi_classifier', 'hsi',transforms.ToTensor())
+p2, _ = get_prediction(df_tr ,rgb_pretrained, 'googleNet_rgb_classifier', 'rgb',transforms.ToTensor())
 
 df_hsi = pd.read_csv('models/ensemble/Classifier_Prediction_Data/denseNet_hsi_classifier.csv')
 df_rgb = pd.read_csv('models/ensemble/Classifier_Prediction_Data/googleNet_rgb_classifier.csv')
@@ -87,7 +87,7 @@ p1 , p2 , labels = df_hsi.iloc[: , :96] , df_rgb.iloc[: , :96] , df_hsi.iloc[: ,
 #_______________________________________________________________________________________________________________________
 
 
-w1 = 0.1
+w1 = 1.0
 preds = []
 
 for i in range(len(labels)) :
@@ -95,5 +95,6 @@ for i in range(len(labels)) :
   output_class = np.argmax(p)
   preds.append(output_class)
   
+print(len(preds))
 accuracy = np.sum(np.array(preds) == np.array(labels)) / len(labels)
 print(accuracy)
