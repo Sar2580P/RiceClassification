@@ -24,12 +24,10 @@ class MobileNet():
   def get_model(self):
     self.mobileNet = torchvision.models.mobilenet_v3_large(weights = 'MobileNet_V3_Large_Weights.DEFAULT', progress = True)
     
-    self.base_model = nn.Sequential(*list(self.mobileNet.children())[:-1])
-
+    self.base_model = nn.Sequential(*list(self.mobileNet.children())[:-1][:-1])
     self.head = nn.Sequential(
-      *list(self.mobileNet.children())[-1][:2] ,
-                FC(0.2 , 1028 ,256), 
-                # FC(0.14 ,1024, 256), 
+                FC(0.2 , 1280 ,512), 
+                FC(0.14 ,512, 256), 
                         )
     return nn.Sequential(
                 self.base_model ,
@@ -53,19 +51,18 @@ class Resnet():
 
 
   def get_model(self):
-    self.resnet = torchvision.models.resnet50(weights = 'ResNet34_Weights.DEFAULT', progress = True)
+    self.resnet = torchvision.models.resnet34(weights = 'ResNet34_Weights.DEFAULT', progress = True)
     
     self.base_model = nn.Sequential(*list(self.resnet.children())[:-1])
     print(self.base_model)
     self.head = nn.Sequential(
-                FC(0.2 , 2048 ,1024), 
-                FC(0.14 ,1024, 256), 
+                nn.Flatten(1) , 
+                FC(0.2 , 512, 256),
+                FC(0.0 ,256, 96), 
                         )
     return nn.Sequential(
                 self.base_model ,
-                nn.Flatten(1), 
-                # self.head ,
-                FC(0, 256, self.config['num_classes']) ,
+                self.head ,
                         )
     
   def forward(self, x):
@@ -246,4 +243,4 @@ class DenseNet(nn.Module):
         return self.model(x)
             
 
-mnet = Resnet(config={'num_classes': 96, 'lr' : 0.001})
+mnet = MobileNet(config={'num_classes': 96, 'lr' : 0.001})
