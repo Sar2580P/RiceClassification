@@ -2,7 +2,7 @@ dir : 'models/ensemble/logs'
 
 num_classes : 96
 
-BATCH_SIZE : 32
+BATCH_SIZE : 64
 lr : 0.000021
 
 in_channels : 168

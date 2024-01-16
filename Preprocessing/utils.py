@@ -14,7 +14,7 @@ def create_cropping_jpg(img_path):
   # ideal t = 161 using otsu
   _, binary = cv2.threshold(image[:,:,2], 0, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
 
-  # Find contours in the binary image
+   # Find contours in the binary image
   contours, _ = cv2.findContours(binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
   # Filter contours based on area
@@ -84,15 +84,15 @@ def split_image(image, x, y, h, w, num_rows, num_cols):
 
 # path_hsi = 'dataset_v1\A9-30-1-21_22_K\CD_1.bil'
 # path_rgb = 'dataset_v1\DBW222_K_22\DBW_222_K_22_CD2.JPG'
-# contour_images_, count = create_cropping_jpg(path_rgb)
+# contour_images, count = create_cropping_jpg(path_rgb)
 # for i, img in enumerate(contour_images_):
 #   cv2.imwrite('rgb_{i}.png'.format(i=i), img)
 
 # eg = read_hdr(path_hsi)
 # ex = np.array(eg.load())
 # images = split_image(ex, 25, 75, 700, 280, 12, 6)
-# plt.imshow(ex[:,:,50])
-# plt.savefig('hsi.png')
+# # plt.imshow(ex[:,:,50])
+# # plt.savefig('hsi.png')
 
 
 

@@ -11,8 +11,8 @@ import pandas as pd
 class Classifier(pl.LightningModule):
   def __init__(self, model_obj):
     super().__init__()
-    self.model = model_obj.model
     self.model_obj = model_obj
+    self.model = model_obj.model
     self.config = model_obj.config
     self.layer_lr = model_obj.layer_lr
 
@@ -30,6 +30,7 @@ class Classifier(pl.LightningModule):
     self.y_hat = []
     self.y_true = []
 
+  
   def training_step(self, batch, batch_idx):
     x, y = batch
     y_hat = self.model_obj.forward(x)
@@ -101,7 +102,7 @@ class MyDataset(Dataset):
       img_tensor = Image.open(img_path)
     else :
       img_tensor = np.load(img_path)
-      img_tensor = self.__msc_correction__(img_tensor)
+      # img_tensor = self.__msc_correction__(img_tensor)
       # img_tensor = self.__snv__(img_tensor)
     if self.transforms_ is not None:
       img_tensor = self.transforms_(img_tensor)

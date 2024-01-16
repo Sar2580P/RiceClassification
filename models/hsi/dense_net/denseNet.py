@@ -15,15 +15,16 @@ config = load_config(config_path)
 torch.set_float32_matmul_precision('high')
 
 model_parameters={}
-model_parameters['densenet_mini'] = [12, 18 ,24 , 12]
+model_parameters['densenet_mini'] = [12, 18, 24, 6]
 model_parameters['densenet121'] = [6,12,24,16]
 model_parameters['densenet169'] = [6,12,32,32]
 model_parameters['densenet201'] = [6,12,48,32]
 model_parameters['densenet264'] = [6,12,64,48]
 
-model_obj = DenseNet(densenet_variant = model_parameters['densenet_mini'] , in_channels=152, num_classes=96 , compression_factor=0.3 , k = 32 , config=config)
+model_obj = DenseNet(densenet_variant = model_parameters['densenet_mini'] , in_channels=config['in_channels'], 
+                     num_classes=config['num_classes'] , compression_factor=0.3 , k = 32 , config=config)
 
-hsi_dense_net_ckpt = os.path.join('models/hsi/dense_net/ckpts' , os.listdir('models/hsi/xception/ckpts')[-1])
+# hsi_dense_net_ckpt = 'models/hsi/dense_net/ckpts/dense_net--epoch=129-val_loss=0.39-val_accuracy=0.87.ckpt'
 # model = Classifier.load_from_checkpoint(hsi_dense_net_ckpt, model_obj=model_obj)
 
 num_workers = 8
@@ -44,8 +45,10 @@ csv_logger = CSVLogger(config['dir'], name=config['model_name']+'_logs')
 
 
 trainer = Trainer(callbacks=[early_stop_callback, checkpoint_callback, rich_progress_bar, rich_model_summary], 
-                  accelerator = 'gpu' ,max_epochs=300, logger=[wandb_logger,csv_logger])  
+                  accelerator = 'gpu' ,max_epochs=200, logger=[wandb_logger,csv_logger])  
  
 trainer.fit(model, tr_loader, val_loader)
 trainer.test(model, tst_loader)
 
+
+# print(model.y_true[0])

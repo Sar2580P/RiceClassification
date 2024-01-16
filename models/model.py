@@ -16,7 +16,8 @@ class MobileNet():
   def __init__(self, config ):
     self.config = config
     self.model = self.get_model()
-    print(self.model)
+    # print(self.model)
+    plot_model(self.config , self.model)
     self.layer_lr = [{'params' : self.base_model.parameters()},{'params': self.head.parameters(), 'lr': self.config['lr'] * 20}]
     
 
@@ -24,8 +25,9 @@ class MobileNet():
   def get_model(self):
     self.mobileNet = torchvision.models.mobilenet_v3_large(weights = 'MobileNet_V3_Large_Weights.DEFAULT', progress = True)
     
-    self.base_model = nn.Sequential(*list(self.mobileNet.children())[:-1][:-1])
+    self.base_model = nn.Sequential(*list(self.mobileNet.children())[:-1])
     self.head = nn.Sequential(
+      *list(self.mobileNet.children())[-1][:-1] , 
                 FC(0.2 , 1280 ,512), 
                 FC(0.14 ,512, 256), 
                         )
@@ -47,54 +49,27 @@ class Resnet():
     self.config = config
     self.model = self.get_model()
     self.layer_lr = [{'params' : self.base_model.parameters()},{'params': self.head.parameters(), 'lr': self.config['lr'] * 20}]
-    
+    plot_model(self.config , self.model)
 
 
   def get_model(self):
-    self.resnet = torchvision.models.resnet34(weights = 'ResNet34_Weights.DEFAULT', progress = True)
+    self.resnet = torchvision.models.resnet18(weights = 'ResNet18_Weights.DEFAULT', progress = True)
     
     self.base_model = nn.Sequential(*list(self.resnet.children())[:-1])
-    print(self.base_model)
     self.head = nn.Sequential(
                 nn.Flatten(1) , 
                 FC(0.2 , 512, 256),
-                FC(0.0 ,256, 96), 
+                FC(0.0 ,256, self.config['num_classes']), 
                         )
     return nn.Sequential(
                 self.base_model ,
-                self.head ,
+                # self.head ,
                         )
     
   def forward(self, x):
     return self.model(x)
 #___________________________________________________________________________________________________________________  
 
-class EffecientNet():
-  # https://pytorch.org/vision/stable/models/generated/torchvision.models.efficientnet_v2_l.html#torchvision.models.efficientnet_v2_l
-  def __init__(self, config):
-    self.config = config
-    
-    self.model = self.get_model()
-    self.layer_lr = [{'params' : self.base_model.parameters()},{'params': self.head.parameters(), 'lr': self.config['lr'] * 100}]
-
-  def get_model(self): 
-    self.head = nn.Sequential(
-                nn.Flatten(1) ,
-                FC(0.2 , 1280 ,512),   
-              )
-
-    self.enet = torchvision.models.efficientnet_v2_l( weights='DEFAULT' , progress = True)    # 'DEFAULT'  : 'IMAGENET1K_V1'
-    self.base_model = nn.Sequential(*list(self.enet.children())[:-1])
-
-    return nn.Sequential(
-                  self.base_model ,
-                  self.head, 
-                  FC(0, 512, self.config['num_classes'])
-                        )   
-    
-  def forward(self, x):
-    return self.model(x)
-#___________________________________________________________________________________________________________________
 
 class GoogleNet():
   # https://pytorch.org/vision/stable/models/generated/torchvision.models.efficientnet_v2_l.html#torchvision.models.efficientnet_v2_l
@@ -115,7 +90,6 @@ class GoogleNet():
     # for param in self.gnet.parameters():
     #   param.requires_grad = False
     self.base_model = nn.Sequential(*list(self.gnet.children())[:-2])
-    print(self.base_model)
     return nn.Sequential(
                   self.base_model ,
                   self.head, 
@@ -128,6 +102,38 @@ class GoogleNet():
     return x 
   
 #___________________________________________________________________________________________________________________
+class DenseNetRGB():
+  # https://pytorch.org/vision/stable/models/generated/torchvision.models.efficientnet_v2_l.html#torchvision.models.efficientnet_v2_l
+  def __init__(self, config):
+    self.config = config
+    
+
+    self.model = self.get_model()
+    self.layer_lr = [{'params' : self.base_model.parameters()},{'params': self.head.parameters(), 'lr': self.config['lr'] * 5}]
+    plot_model(self.config , self.model)
+  def get_model(self): 
+    self.head = nn.Sequential(
+                nn.Flatten(1) ,
+                FC(0.2 , 1024 ,144), 
+                
+    )
+    self.dnet = torchvision.models.densenet121( weights='DEFAULT', progress = True)    # 'DEFAULT'  : 'IMAGENET1K_V1'
+
+    self.base_model = nn.Sequential(
+                                    *list(self.dnet.children())[:-1], 
+                                    nn.AdaptiveAvgPool2d(1), 
+                                    )
+    return nn.Sequential(
+                  self.base_model ,
+                  self.head, 
+                  FC(0, 144, self.config['num_classes'])
+                        )   
+    
+  def forward(self, x):
+    x =  self.model(x) 
+    # print(x.shape)
+    return x  
+#___________________________________________________________________________________________________________________
 
 class HSIModel(nn.Module):
   def __init__(self , config, n_res_blocks = 12):
@@ -139,7 +145,8 @@ class HSIModel(nn.Module):
     self.model = self.get_model()
     self.layer_lr = [{'params' : self.base_model.parameters()},{'params': self.head.parameters(), 'lr': self.config['lr'] * 1}]
 
-
+    plot_model(self.config , self.model)
+    
   def get_model(self):
     self.head = nn.Sequential(
                   nn.Flatten(1) ,
@@ -195,11 +202,10 @@ class DenseNet(nn.Module):
                           
     def get_model(self):
         seq_1 =  nn.Sequential(
-        # 7x7 conv with s=2 and maxpool
-                          nn.Conv2d(in_channels=self.in_channels ,out_channels=64 ,kernel_size=7 ,stride=2 ,padding=3 ,bias = False) ,
-                          nn.BatchNorm2d(num_features=64) , 
-                          nn.ReLU() ,
-                          nn.MaxPool2d(kernel_size=2, stride=2) ,
+                      nn.Conv2d(in_channels=self.in_channels ,out_channels=64 ,kernel_size=7 ,stride=2 ,padding=3 ,bias = False) ,
+                      nn.BatchNorm2d(num_features=64) , 
+                      nn.ReLU() ,
+                      nn.MaxPool2d(kernel_size=2, stride=2) ,
                     )
         #----------------------------------------------------------------------------------------------------------------------------
         # adding 3 DenseBlocks and 3 Transition Layers 
@@ -223,10 +229,10 @@ class DenseNet(nn.Module):
                           *self.deep_nn , 
                           # nn.BatchNorm2/d(num_features=self.dense_block_inchannels)  ,
                           nn.ReLU() ,
-                          # Average Pool
+                          # # Average Pool
                           nn.AdaptiveAvgPool2d(1), 
                           nn.Flatten(1) ,
-                          # fully connected layer
+                          # # fully connected layer
                           nn.Linear(self.dense_block_inchannels, self.num_classes)
                 )
         
@@ -243,4 +249,12 @@ class DenseNet(nn.Module):
         return self.model(x)
             
 
-mnet = MobileNet(config={'num_classes': 96, 'lr' : 0.001})
+# mnet = MobileNet(config={'num_classes': 96, 'lr' : 0.001 , 'BATCH_SIZE' : 32 , 'C' : 3 , 'H' : 224 , 'W' : 224 , 'model_name' : 'MobileNet' , 'dir' : './'})
+
+# gnet = GoogleNet(config={'num_classes': 96, 'lr' : 0.001 , 'BATCH_SIZE' : 32 , 'C' : 3 , 'H' : 247 , 'W' : 120 , 'model_name' : 'GoogleNet' , 'dir' : './'})
+# dnet = DenseNetRGB(config={'num_classes': 98, 'lr' : 0.001 , 'BATCH_SIZE' : 32 , 'C' : 3 , 'H' : 247 , 'W' : 120 , 'model_name' : 'DenseNet' , 'dir' : './'})
+
+# resnet = Resnet(config={'num_classes': 98, 'lr' : 0.001 , 'BATCH_SIZE' : 32 , 'C' : 3 , 'H' : 247 , 'W' : 120 , 'model_name' : 'Resnet' , 'dir' : './'})
+
+
+# dnet = DenseNet(densenet_variant = [12, 18, 24, 6] , in_channels=168, num_classes=98 , compression_factor=0.3 , k = 32 , config={'num_classes': 98, 'lr' : 0.001 , 'BATCH_SIZE' : 32 , 'C' : 168 , 'H' : 40 , 'W' : 24 , 'model_name' : 'DenseNet' , 'dir' : './'})

@@ -106,19 +106,33 @@ def CFS_func(CF, K_L):
     return CFS
 
 #_______________________________________________________________________________________________________________________
-def Gompertz(top = 2, *argv):
+def soft_max(mat):
+
+    exps = np.exp(mat)
+    sum_exps = np.sum(exps , axis = 1)
+    sum_exps = np.reshape(sum_exps , (sum_exps.shape[0] , 1))
+    #   print(exps.shape , sum_exps.shape)
+    a =  exps / sum_exps
+    #   print(np.sum(a , axis=1))
+    # print(a)
+    return a
+
+
+#_______________________________________________________________________________________________________________________
+def Gompertz(argv, top = 2, ):
     L = 0 #Number of classifiers
     for arg in argv:
         L += 1
 
-    num_classes = arg.shape[1]
-    CF = np.zeros(shape = (L,arg.shape[0], arg.shape[1]))
+    num_classes = 98
+    CF = np.zeros(shape = (L,argv[0].shape[0], num_classes))
 
     for i, arg in enumerate(argv):
-        CF[:][:][i] = arg
+        arg = soft_max(arg.to_numpy())
+        CF[i][:][:] = arg
 
     R_L = fuzzy_rank(CF, top) #R_L is with penalties
-    
+    # print(R_L)
     RS = np.sum(R_L, axis=0)
     CFS = CFS_func(CF, R_L)
     FS = RS*CFS
