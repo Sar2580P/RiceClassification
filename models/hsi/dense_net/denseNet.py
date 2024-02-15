@@ -9,6 +9,7 @@ from utils import *
 from pytorch_lightning import Trainer
 from pytorch_lightning.loggers import WandbLogger, CSVLogger
 from data_loading import *
+import pickle 
 
 config_path = 'models/hsi/dense_net/config.yaml'
 config = load_config(config_path)
@@ -34,21 +35,27 @@ tst_loader = DataLoader(tst_dataset, batch_size=config['BATCH_SIZE'], shuffle=Fa
 
 #___________________________________________________________________________________________________________________
 model = Classifier(model_obj)
+NAME = config['model_name']+f'__var-{config["num_classes"]}'+f'__fold-{config["fold"]}'
 
 checkpoint_callback.dirpath = os.path.join(config['dir'], 'ckpts')
-checkpoint_callback.filename = config['ckpt_file_name']
+checkpoint_callback.filename = NAME+'__' + config['ckpt_file_name']
 
 
 run_name = f"lr_{config['lr']} *** bs{config['BATCH_SIZE']} *** decay_{config['weight_decay']}"
-wandb_logger = WandbLogger(project=config['model_name'], name = run_name , log_model='all')
-csv_logger = CSVLogger(config['dir'], name=config['model_name']+'_logs')
+wandb_logger = WandbLogger(project=NAME , name = run_name)
+csv_logger = CSVLogger(config['dir']+'/logs/'+ NAME)
 
 
 trainer = Trainer(callbacks=[early_stop_callback, checkpoint_callback, rich_progress_bar, rich_model_summary], 
-                  accelerator = 'gpu' ,max_epochs=200, logger=[wandb_logger,csv_logger])  
+                  accelerator = 'gpu' ,max_epochs=300, logger=[wandb_logger,csv_logger])  
  
 trainer.fit(model, tr_loader, val_loader)
 trainer.test(model, tst_loader)
 
+if not os.path.exists(os.path.join(config['dir'], 'evaluations')):
+  os.mkdir(os.path.join(config['dir'], 'evaluations'))  
 
-# print(model.y_true[0])
+
+with open(os.path.join(config['dir'], 'evaluations', NAME+'__predictions.pkl'), 'wb') as f:
+  dict_ = {'y_hat': model.y_hat, 'y_true': model.y_true}
+  pickle.dump(dict_, f)

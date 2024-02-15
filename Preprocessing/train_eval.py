@@ -40,6 +40,7 @@ class Classifier(pl.LightningModule):
     self.tr_kappa(y_hat, y)
     self.log("train_kappa", self.tr_kappa, on_step=False , on_epoch=True, prog_bar=True, logger=True)
     self.log("train_accuracy", self.tr_accuracy, on_step = False, on_epoch=True,prog_bar=True, logger=True)
+  
     return loss
   
   def validation_step(self, batch, batch_idx):
@@ -66,14 +67,14 @@ class Classifier(pl.LightningModule):
     self.log("test_accuracy", self.tst_accuracy, on_step = False ,on_epoch=True,prog_bar=True, logger=True)
     return loss
   
-  def on_test_epoch_end(self):
-    y_hat = torch.cat(self.y_hat, dim=0)
-    y_true = torch.cat(self.y_true, dim=0)
+  # def on_test_epoch_end(self):
+  #   y_hat = torch.cat(self.y_hat, dim=0)
+  #   y_true = torch.cat(self.y_true, dim=0)
     
-    cm = self.conf_mat(y_hat, y_true).detach().cpu().numpy()
+  #   cm = self.conf_mat(y_hat, y_true).detach().cpu().numpy()
     
-    df = pd.DataFrame(cm , columns = [str(i) for i in range(self.config['num_classes'])])
-    df.to_csv(os.path.join(self.config['dir'], 'confusion_matrix.csv'))
+  #   df = pd.DataFrame(cm , columns = [str(i) for i in range(self.config['num_classes'])])
+  #   df.to_csv(os.path.join(self.config['dir'], 'confusion_matrix.csv'))
 
     
   def configure_optimizers(self):

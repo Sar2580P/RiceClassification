@@ -3,7 +3,7 @@ import pandas as pd
 import json
 sys.path.append(os.getcwd())
 from utils import *
-from sklearn.model_selection import train_test_split
+# from sklearn.model_selection import train_test_split
 import random
 random.seed(42)
 from sklearn.model_selection import StratifiedKFold
@@ -75,82 +75,46 @@ def segment_images():
 # segment_images()
 #__________________________________________________________________________________________________________________
 
-class Preprocess():
-  def __init__(self ,base_path_rgb , base_path_hsi , df_rgb , df_hsi, dir, class_ct = 98):
-    self.base_path_rgb = base_path_rgb
-    self.base_path_hsi = base_path_hsi
-    self.df_rgb = df_rgb
-    self.df_hsi = df_hsi
-    self.class_ct = class_ct
-    self.dir = dir
 
-  def concat_df(self):
-    self.df_final = pd.DataFrame(columns=['rgb_path', 'hsi_path' , 'class_id'])
-    for i in range(len(self.df_rgb)):
-      if self.df_rgb.iloc[i,1]>= self.class_ct:
-         print('taken only {} classes'.format(self.class_ct))
-         break
-      if self.df_rgb.iloc[i,0][:-4] != self.df_hsi.iloc[i,0][:-4]:
-        print('error in concat_df')
-        break
+def create_folds(final_df, variety_count,  num_folds = 5):
+  BASE_PATH = 'Data/'+str(variety_count)
+  mapping_json = json.load(open(os.path.join(BASE_PATH, f'{variety_count}_var_mappings.json')))
 
-      rgb_path = self.base_path_rgb +'/'+ self.df_rgb.iloc[i,0]
-      hsi_path = self.base_path_hsi +'/'+ self.df_hsi.iloc[i,0]
-      class_id = self.df_rgb.iloc[i,1]
-      self.df_final.loc[len(self.df_final)] = [rgb_path , hsi_path , class_id]
+  class_labels = [int(x) for x in mapping_json['id_to_class'].keys()]
+  mask = final_df['class_id'].isin(class_labels)
+  df = final_df[mask]
+  df = df.reset_index(drop=True)
 
-    self.df_final.to_csv(os.path.join(self.dir ,'df_final.csv') , index = False)
+  skf = StratifiedKFold(n_splits=num_folds, random_state=42, shuffle=True)
+  for fold, (train_index, val_index) in enumerate(skf.split(df, df.loc[:, 'class_id'])):
 
-  def split_df(self, df, test_size = 0.2):
-    df_train , df_test = train_test_split(df, test_size=test_size, stratify=df.iloc[:,2])
-    df_test.to_csv(os.path.join(self.dir, 'df_tst.csv') , index = False)
+    if not os.path.exists(os.path.join(BASE_PATH, f'fold_{fold}')):
+      os.mkdir(os.path.join(BASE_PATH, f'fold_{fold}'))
 
-    skf = StratifiedKFold(n_splits=5, random_state=42, shuffle=True)
-
-    y = df_train.iloc[:,2].to_numpy()
-    for fold, (train_index, val_index) in enumerate(skf.split(df_train, y)):
-      if not os.path.exists(os.path.join(self.dir,'fold_{x}'.format(x = fold))):
-        os.mkdir(os.path.join(self.dir,'fold_{x}'.format(x = fold)))
-
-      df_train_fold, df_val_fold = df_train.iloc[train_index, :], df_train.iloc[val_index, :]
-      
-      df_train_fold.to_csv(os.path.join(self.dir,'fold_{x}'.format(x = fold) , 'df_tr.csv') , index = False)
-      df_val_fold.to_csv(os.path.join(self.dir,'fold_{x}'.format(x = fold),  'df_val.csv') , index = False)
-#__________________________________________________________________________________________________________________
-# class_ct = 98
-# # p.concat_df() 
-
-
-li = [
-  'Data/12_var_mappings.json' ,  'Data/24_var_mappings.json' , 'Data/37_var_mappings.json', 
-  'Data/55_var_mappings.json' ,  'Data/75_var_mappings.json'
-]
-
-def create_df(json_path):
-  df = pd.DataFrame(columns=['rgb_path', 'hsi_path' , 'class_id'])
-  json_file = json.load(open(json_path))
-  id_to_class = json_file['id_to_class']
-  num_classes = len(id_to_class)
-  classes = list(id_to_class.keys())
-  
-  if not os.path.exists('Data/{u}'.format(u = num_classes)):
-    os.mkdir('Data/{u}'.format(u = num_classes))
+    df_train_fold, df_val_fold = df.iloc[train_index, :], df.iloc[val_index, :]
     
-  for class_ in classes:
-    for i in range(144):
-      rgb_path = 'Data/rgb/{class_}_{i}.png'.format(class_ = class_, i = i)
-      hsi_path = 'Data/hsi/{class_}_{i}.npy'.format(class_ = class_, i = i)
-      df.loc[len(df)] = [rgb_path , hsi_path , class_]
-  df.to_csv('Data/{u}/df_final.csv'.format(u = num_classes) , index = False)
-  
-# for path in li:
-#   create_df(path)
-  
-li = [12,24,37,55,75]
+    df_train_fold.to_csv(os.path.join(BASE_PATH, f'fold_{fold}' , 'df_tr.csv') , index = False)
+    df_val_fold.to_csv(os.path.join(BASE_PATH, f'fold_{fold}' ,  'df_val.csv') , index = False)
+    print('fold_{x} created'.format(x = fold))
 
-for class_ct in li:
-  dir = 'Data/{x}'.format(x = class_ct)
-  p = Preprocess('Data/rgb', 'Data/hsi', pd.read_csv('Data/rgb.csv'), 
-                 pd.read_csv('Data/hsi.csv'), dir, class_ct)
 
-  p.split_df(pd.read_csv('Data/{x}/df_final.csv'.format(x = class_ct)))
+if not os.path.exists('Data/final_df.csv'):
+  hsi_df = pd.read_csv('Data/hsi.csv')
+
+  RGB_BASE_PATH, HSI_BASE_PATH = 'Data/rgb' , 'Data/hsi'
+  final_df = pd.DataFrame(columns=['rgb_path', 'hsi_path' , 'class_id'])
+  for i in range(len(hsi_df)):
+
+    rgb_path = RGB_BASE_PATH +'/'+ hsi_df.iloc[i,0][:-4]+'.png' 
+    hsi_path = HSI_BASE_PATH +'/'+ hsi_df.iloc[i,0]
+    class_id = hsi_df.iloc[i,1]
+    final_df.loc[len(final_df)] = [rgb_path , hsi_path , class_id]
+
+  final_df.to_csv('Data/final_df.csv' , index = False)
+
+
+
+# li = [12,24,37,55,75, 98]
+# for variety_count in li:
+#   create_folds(pd.read_csv('Data/final_df.csv'), variety_count)
+#   print('done for ', variety_count)

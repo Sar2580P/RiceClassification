@@ -39,5 +39,9 @@ models/hsi/hsi_distribution.csv
 models/hsi/dense_net/ckpts
 models/hsi/dense_net/hsi_dense_net_logs
 models/ensemble/Classifier_Prediction_Data
-weights
-weights.zip
+models/rgb/densenet/ckpts
+models/rgb/densenet/logs
+models/rgb/densenet/evaluate
+models/hsi/dense_net/ckpts
+models/hsi/dense_net/logs
+models/hsi/dense_net/evaluate

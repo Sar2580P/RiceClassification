@@ -110,7 +110,7 @@ class DenseNetRGB():
 
     self.model = self.get_model()
     self.layer_lr = [{'params' : self.base_model.parameters()},{'params': self.head.parameters(), 'lr': self.config['lr'] * 5}]
-    plot_model(self.config , self.model)
+    # plot_model(self.config , self.model)
   def get_model(self): 
     self.head = nn.Sequential(
                 nn.Flatten(1) ,
@@ -196,7 +196,7 @@ class DenseNet(nn.Module):
         self.model = self.get_model()
         self.config = config
         self.layer_lr = [{'params' : self.model.parameters() , 'lr' : self.config['lr'] * 1}]
-        plot_model(self.config , self.model)
+        # plot_model(self.config , self.model)
                 
                           
                           
