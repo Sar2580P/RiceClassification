@@ -45,3 +45,5 @@ models/rgb/densenet/evaluate
 models/hsi/dense_net/ckpts
 models/hsi/dense_net/logs
 models/hsi/dense_net/evaluate
+models/rgb/densenet/evaluations
+models/hsi/dense_net/evaluations

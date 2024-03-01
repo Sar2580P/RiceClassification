@@ -40,7 +40,7 @@ wandb_logger = WandbLogger(project= NAME, name = run_name)
 csv_logger = CSVLogger(config['dir']+'/logs/'+ NAME)
 
 trainer = Trainer(callbacks=[early_stop_callback, checkpoint_callback, rich_progress_bar, rich_model_summary], 
-                  accelerator = 'gpu' ,max_epochs=300, logger=[wandb_logger, csv_logger])  
+                  accelerator = 'gpu' ,max_epochs=130, logger=[wandb_logger, csv_logger])  
  
 trainer.fit(model, tr_loader, val_loader)
 trainer.test(model, tst_loader)
@@ -52,3 +52,5 @@ if not os.path.exists(os.path.join(config['dir'], 'evaluations')):
 with open(os.path.join(config['dir'], 'evaluations', NAME+'__predictions.pkl'), 'wb') as f:
   dict_ = {'y_hat': model.y_hat, 'y_true': model.y_true}
   pickle.dump(dict_, f)
+
+

@@ -156,6 +156,7 @@ class HSIModel(nn.Module):
     li = [ResidualBlock(256) for i in range(self.n_res_blocks)]
     self.base_model = nn.Sequential(
         # BandAttentionBlock(self.in_channels), 
+        nn.BatchNorm2d(self.in_channels), 
         SqueezeBlock(self.in_channels, 100),
         SqueezeBlock(100, 512),
         nn.Dropout(p=0.2) ,

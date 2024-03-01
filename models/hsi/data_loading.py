@@ -4,7 +4,7 @@ sys.path.append('Preprocessing')
 from train_eval import *
 from callbacks import *
 
-fold = 0
+fold = 4
 class_ct = 98
 config = {
   'tr_path'  : 'Data/{class_ct}/fold_{x}/df_tr.csv'.format(class_ct=class_ct, x = fold),

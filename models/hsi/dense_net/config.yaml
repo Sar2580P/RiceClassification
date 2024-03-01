@@ -1,7 +1,7 @@
 dir : 'models/hsi/dense_net'
 
 num_classes : 98
-fold: 0
+fold: 4
 BATCH_SIZE : 64
 lr : 0.00000744
 

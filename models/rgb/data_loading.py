@@ -5,7 +5,7 @@ from train_eval import *
 from callbacks import *
 
 class_ct = 98
-fold = 0
+fold = 4
 config = {
   'tr_path' : 'Data/{class_ct}/fold_{fold}/df_tr.csv'.format(class_ct=class_ct, fold = fold),
   'val_path' : 'Data/{class_ct}/fold_{fold}/df_val.csv'.format(class_ct=class_ct, fold = fold),
